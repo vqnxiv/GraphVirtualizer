@@ -55,18 +55,7 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
         }
     }
 
-    /**
-     * Constructor which lays out this structure.
-     * 
-     * @param el Elements.
-     * @param layoutSupplier Layout factory.
-     */
-    public CoordinatesList(Collection<E> el, Function<CoordinatesStructure<E>, Layout<E>> layoutSupplier) {
-        this(el);
-        layoutSupplier.apply(this).apply(); // ????
-    }
-
-
+    
     /**
      * {@inheritDoc}
      * 
@@ -174,7 +163,7 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
         /**
          * Constructor.
          */
-        CoordsListIterator() {
+        protected CoordsListIterator() {
             itr = elements.listIterator();
         }
         

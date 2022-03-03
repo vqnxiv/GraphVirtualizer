@@ -45,6 +45,7 @@ public abstract class AbstractAbleRegion extends Region {
      */
     protected final BooleanProperty scrollable = new SimpleBooleanProperty();
 
+    // todo: listeners
     /**
      * Whether this region can be panned.
      */
@@ -285,6 +286,24 @@ public abstract class AbstractAbleRegion extends Region {
         }
     }
 
+
+    /**
+     * Setter for {@link #hbarPolicy}.
+     * 
+     * @param hbarPolicy New HBar policy value.
+     */
+    public void setHbarPolicy(ScrollPane.ScrollBarPolicy hbarPolicy) {
+        this.hbarPolicy.set(hbarPolicy);
+    }
+
+    /**
+     * Setter for {@link #vbarPolicy}.
+     *
+     * @param vbarPolicy New HBar policy value.
+     */
+    public void setVbarPolicy(ScrollPane.ScrollBarPolicy vbarPolicy) {
+        this.vbarPolicy.set(vbarPolicy);
+    }
 
     /**
      * Setter for {@link #scrollable}.

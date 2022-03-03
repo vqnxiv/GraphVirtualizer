@@ -20,6 +20,15 @@ public interface LayoutableStructure<E> extends CoordinatesStructure<E> {
 
     /**
      * Reposition one element to the given coordinates.
+     *
+     * @param e The elements with its old coordinates.
+     * @param x New X coordinate.
+     * @param y New Y coordinate.
+     */
+    void repositionTo(CoordinatesElement<E> e, double x, double y);
+    
+    /**
+     * Reposition one element to the given coordinates.
      * 
      * @param e The elements with its old coordinates.
      * @param p The new coordinates for the element.

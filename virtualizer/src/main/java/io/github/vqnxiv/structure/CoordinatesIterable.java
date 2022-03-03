@@ -14,6 +14,8 @@ public interface CoordinatesIterable<E> extends Iterable<E> {
      *
      * @return an Iterator.
      */
+    // todo: rename to cIterator so it doesnt clash? 
+    //  + allows to only return one if Layoutable or smth <= no
     @Override
     CoordinatesIterator<E> iterator();
 }

@@ -120,8 +120,9 @@ public class GlobalTest extends Application {
         }
         
         int n = 1000;
+        double z = 20_000d;
         // var struct = new CoordinatesList<>(l);
-        var struct = new CoordinatesMatrix<>(l, n, n, 1.5f, 1.5f, n, n);
+        var struct = new CoordinatesMatrix<>(l, z, z, n, n, 1.5f, 1.5f, n, n);
         // var pool = new SetNodeNodePool<>((CoordinatesElement<Thing> t) -> new DecoratedNodeLabel<>(t));
         var pool = new TimedNodeNodePool<>(
             (CoordinatesElement<Thing> t) -> new DecoratedNodeLabel<>(t),

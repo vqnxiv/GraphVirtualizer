@@ -19,6 +19,8 @@ import java.util.Collection;
  * @see CoordinatesIterable
  * @see CoordinatesIterator
  */
+// todo: extends Collection<E>? w/ default throws for all mutable methods
+// iterator() clash 
 public interface CoordinatesStructure<E> extends CoordinatesIterable<CoordinatesElement<E>> {
 
     

@@ -3,6 +3,7 @@ package io.github.vqnxiv.layout;
 
 import io.github.vqnxiv.structure.LayoutableStructure;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 
 
@@ -73,7 +74,7 @@ public abstract class AbstractLayout<E> implements Layout<E> {
      * @return Property of the maximum used width offset.
      */
     @Override
-    public DoubleProperty maxUsedWidth() {
+    public ReadOnlyDoubleProperty maxUsedWidth() {
         return maxUsedWidth;
     }
 
@@ -93,7 +94,7 @@ public abstract class AbstractLayout<E> implements Layout<E> {
      * @return Property of the maximum used height offset.
      */
     @Override
-    public DoubleProperty maxUsedHeight() {
+    public ReadOnlyDoubleProperty maxUsedHeight() {
         return maxUsedHeight;
     }
 }

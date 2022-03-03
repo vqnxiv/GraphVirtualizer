@@ -9,6 +9,7 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Point2D;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -98,8 +99,15 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * Default maximum height range increase.
      */
     public static final float DEFAULT_MAX_HEIGHT_INCREASE = 1.5f;
-    
+
+    /**
+     * Default maximum width.
+     */
     public static final double DEFAULT_MAX_WIDTH = 1_000d;
+
+    /**
+     * Default maximum height.
+     */
     public static final double DEFAULT_MAX_HEIGHT = 1_000d;
 
 
@@ -111,16 +119,17 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     /**
      * Current row range.
      */
+    // main reason for using rowRange and colRange is that
+    // maxHeight and maxWidth may become desynced due to
+    // bindings
+    // solution => ReadOnly getters and update on reposition()
+    // and add() and constructors if greater than current value
     private int rowRange;
 
     /**
      * Current column range.
      */
     private int colRange;
-    
-    // NOT NEEDED?
-    private int rowNumber;
-    private int colNumber;
     
     /**
      * Maximum row range increase.
@@ -157,89 +166,280 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      */
     private int modCount = 0;
 
-    
-    
+
+    /**
+     * Constructor.
+     * 
+     */
     public CoordinatesMatrix(Collection<E> el) {
         this(
-            el, DEFAULT_ROW_NUMBER, DEFAULT_COL_NUMBER,
+            el, DEFAULT_MAX_WIDTH, DEFAULT_MAX_HEIGHT,
+            DEFAULT_ROW_NUMBER, DEFAULT_COL_NUMBER,
             DEFAULT_MAX_WIDTH_INCREASE, DEFAULT_MAX_HEIGHT_INCREASE,
             DEFAULT_MAX_ROW_NUMBER, DEFAULT_MAX_COL_NUMBER
         );
     }
-    
-    public CoordinatesMatrix(Collection<E> el, int initialRowNumber, int initialColNumber) {
+
+    /**
+     * Constructor.
+     *
+     * @param el            Elements.
+     * @param initialWidth  Width.
+     * @param initialHeight Height.
+     */
+    public CoordinatesMatrix(Collection<E> el, double initialWidth, double initialHeight) {
         this(
-            el, initialRowNumber, initialColNumber, 
+            el, initialWidth, initialHeight,
+            DEFAULT_ROW_NUMBER, DEFAULT_COL_NUMBER,
             DEFAULT_MAX_WIDTH_INCREASE, DEFAULT_MAX_HEIGHT_INCREASE,
             DEFAULT_MAX_ROW_NUMBER, DEFAULT_MAX_COL_NUMBER
         );
     }
-    
-    public CoordinatesMatrix(Collection<E> el, int initialRowNumber, int initialColNumber,
+
+    /**
+     * Constructor.
+     *
+     * @param el               Elements.
+     * @param initialWidth     Width.
+     * @param initialHeight    Height.
+     * @param initialRowNumber Row number.
+     * @param initialColNumber Column number.
+     */
+    public CoordinatesMatrix(Collection<E> el, double initialWidth, double initialHeight,
+                             int initialRowNumber, int initialColNumber) {
+        this(
+            el, initialWidth, initialHeight,
+            initialRowNumber, initialColNumber, 
+            DEFAULT_MAX_WIDTH_INCREASE, DEFAULT_MAX_HEIGHT_INCREASE,
+            DEFAULT_MAX_ROW_NUMBER, DEFAULT_MAX_COL_NUMBER
+        );
+    }
+
+    /**
+     * Constructor.
+     * 
+     * @param el                  Elements.
+     * @param initialWidth        Width.
+     * @param initialHeight       Height.
+     * @param initialRowNumber    Row number.
+     * @param initialColNumber    Column number.
+     * @param maxRowRangeIncrease Maximum row range increase.
+     * @param maxColRangeIncrease Maximum column range increase.
+     */
+    public CoordinatesMatrix(Collection<E> el, double initialWidth, double initialHeight,
+                             int initialRowNumber, int initialColNumber,
                              float maxRowRangeIncrease, float maxColRangeIncrease) {
         this(
-            el, initialRowNumber, initialColNumber,
+            el, initialWidth, initialHeight,
+            initialRowNumber, initialColNumber,
             maxRowRangeIncrease, maxColRangeIncrease,
             DEFAULT_MAX_ROW_NUMBER, DEFAULT_MAX_COL_NUMBER
         );
     }
-    
+
+    /**
+     * Constructor.
+     * 
+     * @param el                  Elements.
+     * @param initialWidth        Width.
+     * @param initialHeight       Height.
+     * @param initialRowNumber    Row number.
+     * @param initialColNumber    Column number.
+     * @param maxRowRangeIncrease Maximum row range increase.
+     * @param maxColRangeIncrease Maximum column range increase.
+     * @param maxRowNumber        Maximum rows.
+     * @param maxColNumber        Maximum columns.
+     */
     @SuppressWarnings("unchecked")
-    public CoordinatesMatrix(Collection<E> el, int initialRowNumber, int initialColNumber,
+    public CoordinatesMatrix(Collection<E> el, double initialWidth, double initialHeight,
+                             int initialRowNumber, int initialColNumber,
                              float maxRowRangeIncrease, float maxColRangeIncrease,
                              int maxRowNumber, int maxColNumber) {
         
-        if(initialRowNumber < 1 || initialColNumber < 1 
+        if(initialWidth < 0 || initialHeight < 0
+            || initialRowNumber < 1 || initialColNumber < 1
             || maxRowRangeIncrease < 1.0 || maxColRangeIncrease < 1.0
             || maxRowNumber < initialRowNumber || maxColNumber < initialColNumber) {
             throw new IllegalArgumentException();
         }
-        
-        this.rowNumber = initialRowNumber;
-        this.colNumber = initialColNumber;
-        
+
         this.maxRowRangeIncrease = maxRowRangeIncrease;
         this.maxColRangeIncrease = maxColRangeIncrease;
 
         this.maxRowNumber = maxRowNumber;
         this.maxColNumber = maxColNumber;
+
+        elements = (List<CoordinatesElement<E>>[][]) Array.newInstance(List.class, initialRowNumber, initialColNumber);
         
-        this.elements = (List<CoordinatesElement<E>>[][]) new List[rowNumber][colNumber];
+        maxWidth.set(initialWidth);
+        maxHeight.set(initialHeight);
         
-        maxWidth.set(DEFAULT_MAX_WIDTH);
-        maxHeight.set(DEFAULT_MAX_HEIGHT);
-        
-        rowRange = (int) (maxWidth.get() / rowNumber);
-        colRange = (int) (maxHeight.get() / colNumber);
-        
-        for(int i = 0; i < elements.length; i++) {
-            for(int j = 0; j < elements[0].length; j++) {
-                elements[i][j] = new ArrayList<>();
-            }
-        }
+        rowRange = (int) (maxWidth.get() / initialRowNumber);
+        colRange = (int) (maxHeight.get() / initialColNumber);
         
         for(E e : el) {
             elements[0][0].add(new CoordinatesElement<>(e, 0, 0));
         }
-        
+    }
+
+
+    /**
+     * Should be called whenever {@link #elements} is modified.
+     */
+    // todo: private elements and add protected methods which call this
+    protected void modified() {
+        modCount++;
     }
     
-
+    /**
+     * Helper method which returns where a pair of coordinates
+     * would be localed in {@link #elements}.
+     * 
+     * @param p Coordinates.
+     * @return Point2D which contains the coordinates.
+     */
     protected Point2D getCoordsInArray(CoordinatesElement<E> p) {
-        int i = (int) (p.getX() / maxWidth.get() * rowNumber);
-        int j = (int) (p.getY() / maxHeight.get() * colNumber);
+        int i = (int) (p.getX() / maxWidth.get() * elements.length);
+        int j = (int) (p.getY() / maxHeight.get() * elements[0].length);
         return new Point2D(i, j);
     }
 
+    /**
+     * Helper method which returns where a pair of coordinates
+     * would be localed in {@link #elements}.
+     *
+     * @param p Coordinates.
+     * @return Point2D which contains the coordinates.
+     */
     protected Point2D getCoordsInArray(Point2D p) {
-        
-        int i = (int) (p.getX() / maxWidth.get() * rowNumber);
-        int j = (int) (p.getY() / maxHeight.get() * colNumber);
+        int i = (int) (p.getX() / maxWidth.get() * elements.length);
+        int j = (int) (p.getY() / maxHeight.get() * elements[0].length);
+        return new Point2D(i, j);
+    }
+
+    /**
+     * Helper method which returns where a pair of coordinates
+     * would be localed in {@link #elements}.
+     *
+     * @param x X coordinate.
+     * @param y Y coordinate.
+     * @return Point2D which contains the coordinates.
+     */
+    protected Point2D getCoordsInArray(double x, double y) {
+        int i = (int) (x / maxWidth.get() * elements.length);
+        int j = (int) (y / maxHeight.get() * elements[0].length);
         return new Point2D(i, j);
     }
 
 
+    /**
+     * Ensures that the structure can correctly store the given coordinates.
+     * 
+     * @param width  X coordinate.
+     * @param height Y coordiinate.
+     */
+    protected void ensureSize(double width, double height) {
+        // ensures that the coordinates can get inside
+        // e.g if ensureSize(p.x, p.y) p can be inside the array
+        width++;
+        height++;
 
+        if(width <= maxWidth.get() && height <= maxHeight.get()) {
+            return;
+        }
+        
+        double newWidth = Math.max(width, maxWidth.get());
+        double newHeight = Math.max(height, maxHeight.get());
+        
+        var newElements = newArray(newWidth, newHeight);
+        
+        for(var e : this) {
+            int i = (int) (e.getX() / newWidth * newElements.length);
+            int j = (int) (e.getY() / newHeight * newElements[0].length);
+            newElements[i][j].add(e);
+        }
+
+        elements = newElements;
+        
+        rowRange = (int) newWidth / elements.length;
+        colRange = (int) newHeight / elements[0].length;
+        
+        maxWidth.set(newWidth);
+        maxHeight.set(newHeight);
+    }
+
+    /**
+     * Whether to resize the width on row range.
+     * 
+     * @param newWidth New total width.
+     * @return {@code true} if yes; {@code false} otherwise.
+     */
+    private boolean resizeWidthOnRange(double newWidth) {
+        double actualMaxWidth = (double) elements.length * rowRange;
+        
+        if(newWidth <= actualMaxWidth) {
+            return false;
+        }
+
+        if(elements.length == maxRowNumber) {
+            return true;
+        }
+        
+        return (int) (newWidth / elements.length) <= (int) (rowRange * maxRowRangeIncrease);
+    }
+
+    /**
+     * Whether to resize the height on row range.
+     *
+     * @param newHeight New total width.
+     * @return {@code true} if yes; {@code false} otherwise.
+     */
+    private boolean resizeHeightOnRange(double newHeight) {
+        double actualMaxHeight = (double) elements[0].length * colRange;
+
+        if(newHeight <= actualMaxHeight) {
+            return false;
+        }
+
+        if(elements[0].length == maxColNumber) {
+            return true;
+        }
+
+        return (int) (newHeight / elements[0].length) <= (int) (colRange * maxColRangeIncrease);
+    }
+
+    /**
+     * Creates the new array with the given sizes.
+     * 
+     * @param newWidth  New total width.
+     * @param newHeight New total height.
+     * @return New array.
+     */
+    @SuppressWarnings("unchecked")
+    private List<CoordinatesElement<E>>[][] newArray(double newWidth, double newHeight) {
+        int row = elements.length;
+        int col = elements[0].length;
+        
+        if(!resizeWidthOnRange(newWidth)) {
+            row = (int) (newWidth / rowRange);
+        }
+        
+        if(!resizeHeightOnRange(newHeight)) {
+            col = (int) (newHeight / colRange);
+        }
+        
+        var p = (List<CoordinatesElement<E>>[][]) Array.newInstance(List.class, row, col);
+        
+        for(var t : p) {
+            for(int i = 0; i < t.length; i++) {
+                t[i] = new ArrayList<>();
+            }
+        }
+        
+        return p;
+    }
+  
+    
     /**
      * {@inheritDoc}
      *
@@ -260,11 +460,11 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
             return l;
         }
         
-        int minI = Math.max((int) (topLeftX / maxWidth.get() * rowNumber), 0);
-        int minJ = Math.max((int) (topLeftY / maxHeight.get() * colNumber), 0);
+        int minI = Math.max((int) (topLeftX / maxWidth.get() * elements.length), 0);
+        int minJ = Math.max((int) (topLeftY / maxHeight.get() * elements[0].length), 0);
 
-        int maxI = Math.min((int) (bottomRightX / maxWidth.get() * rowNumber), rowNumber);
-        int maxJ = Math.min((int) (bottomRightY / maxHeight.get() * colNumber), rowNumber);
+        int maxI = Math.min((int) (bottomRightX / maxWidth.get() * elements.length), elements.length);
+        int maxJ = Math.min((int) (bottomRightY / maxHeight.get() * elements[0].length), elements[0].length);
         
         for(int i = minI; i < maxI+1; i++) {
             for(int j = minJ; j < maxJ+1; j++) {
@@ -285,55 +485,6 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     }
     
     
-    protected void ensureSize(double width, double height) {
-        width++;
-        height++;
-        
-        double actualMaxWidth = (double) rowNumber * rowRange;
-        double actualMaxHeight = (double) colNumber * colRange;
-        
-        if(width <= actualMaxWidth && height <= actualMaxHeight) {
-            return;
-        }
-        
-        int possNewRowRange = (int) (width / rowNumber);
-        int possNewColRange = (int) (height / colNumber);
-        
-        boolean resizeOnRowRange = possNewRowRange <= (int) (rowRange * maxRowRangeIncrease);
-        boolean resizeOnColRange = possNewColRange <= (int) (colRange * maxColRangeIncrease);
-        
-        
-        int newRowNumber = (resizeOnRowRange) ? rowNumber : (int) (width / rowRange);
-        int newColNumber = (resizeOnColRange) ? colNumber : (int) (height / colRange);
-
-        var newElements = (List<CoordinatesElement<E>>[][]) new List[newRowNumber][newColNumber];
-        for(var t : newElements) {
-            for(int i = 0; i < t.length; i++) {
-                t[i] = new ArrayList<>();
-            }
-        }
-        
-     
-        for(var e : this) {
-            int i = (int) (e.getX() / width * newRowNumber);
-            int j = (int) (e.getY() / height * newColNumber);
-            newElements[i][j].add(e);
-        }
-        
-        elements = newElements;
-        rowNumber = newRowNumber;
-        colNumber = newColNumber;
-        rowRange = (resizeOnRowRange) ? possNewRowRange : rowRange;
-        colRange = (resizeOnColRange) ? possNewColRange : colRange;
-        maxWidth.set(width);
-        maxHeight.set(height);
-    }
-    
-    private void reposition() {
-        
-    }
-    
-
     /**
      * {@inheritDoc}
      *
@@ -383,7 +534,10 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      */
     @Override
     public void forEach(Consumer<? super CoordinatesElement<E>> action) {
-        //CoordinatesStructure.super.forEach(action);
+        // will automatically throw ConcurrentModififcationException
+        for(var e : this) {
+            action.accept(e);
+        }
     }
 
 
@@ -392,35 +546,36 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      */
     protected class MatrixIterator implements CoordinatesIterator<CoordinatesElement<E>> {
 
+        // todo: private or protected?
         /**
          * Current row index.
          */
-        private int currentRow = 0;
+        protected int currentRow = 0;
 
         /**
          * Current column index.
          */
-        private int currentCol = 0;
+        protected int currentCol = 0;
 
         /**
          * Current index in the current row and column.
          */
-        private int currentIndex = -1;
+        protected int currentIndex = -1;
         
         /**
          * Row index of the next element. {@code -1} if no next element.
          */
-        private int nextRow = 0;
+        protected int nextRow = 0;
 
         /**
          * Column index of the next element. {@code -1} if no next element.
          */
-        private int nextCol = 0;
+        protected int nextCol = 0;
 
         /**
          * Index of the next element. {@code -1} if no next element.
          */
-        private int nextIndex = 0;
+        protected int nextIndex = 0;
 
         /**
          * Expected modification count for concurrent modification.
@@ -432,7 +587,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         /**
          * Constructor.
          */
-        MatrixIterator() {
+        protected MatrixIterator() {
             expectedModCount = modCount;
             
         }

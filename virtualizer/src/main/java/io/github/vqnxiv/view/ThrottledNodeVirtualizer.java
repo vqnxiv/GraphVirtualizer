@@ -35,30 +35,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @see NodeVirtualizer
  */
-/*
-    Right now blocking is not exactly smooth, but excessive smoothing makes 
-  panning / scrolling become extremely slow and feel unresponsive
-  (e.g if scrollbar shift => scroll of 2.5k px in shifts of 200...)
-  and dropping too many shifts makes it look like a slideshow.
-  
-    Smooth up to 1k-2k nodes, 2k-4k makes it feel slightly unresponsive,
-  and above 10k is a bit less slideshow than throttledvirtualizer.
-  My guess is that with correct use of line reduction, smoothing etc
-  it could feel smooth until 5-10k, then we reach JFX limits
-  (updating the view takes too long for any sort of shift to seem smooth).
-  (though that may not be the case with better structures and/or async fecthing?)
- 
-    A possibility would be to track both shifts positions and their timestamps,
-  so we can detect 'jumps' (scrollbar shifts) and avoid smoothing them <br>
-    + could also adapt the smoothing depending on how fast the updates are done
-  (e.g increase/decrease shifts depending on how slow/fast it updates) <br>
-    + could also drop shifts if there's too many queued (e.g like in dry(),
-  only take the start and the end of the line). <br>
-    + we can reduce a lot with douglasPeucker and make curves/sudden corner shifts
-  a lot smoother with smooth(). Like combine dry() + dgp() on sublists of the 
-  total queued shifts, then smooth everything; or smooth depending on time 
-  between updates, etc.
- */
 public class ThrottledNodeVirtualizer<E> extends NodeVirtualizer<E> {
 
     /**
@@ -186,17 +162,6 @@ public class ThrottledNodeVirtualizer<E> extends NodeVirtualizer<E> {
         else {
             Platform.runLater(
                 () -> {
-                    // we get it here as there might be a delay between the moment 
-                    // runLater() is called and the moment it's actually executing 
-                    // the runnable
-                    
-                    // not sure this delay is worth accounting for though
-                    // it seems to be sub 10ms with a few nodes (sub 5ms
-                    // when fully zoomed in), and then 40-70ms with a few
-                    // thousands and <= 100ms at ~15k nodes?
-                    // only goes above that (~200-400ms) when spamming 
-                    // scrollbars or resizing the pane to fullscreen from 
-                    // 100*100
                     var p = getNext();
                     refreshTo(p.getX(), p.getY());
                     

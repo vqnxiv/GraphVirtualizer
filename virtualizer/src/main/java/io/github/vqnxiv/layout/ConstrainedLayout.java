@@ -1,7 +1,7 @@
 package io.github.vqnxiv.layout;
 
 
-import javafx.beans.property.ReadOnlyDoubleProperty;
+import javafx.beans.property.DoubleProperty;
 
 
 /**
@@ -50,7 +50,7 @@ public interface ConstrainedLayout<E> extends Layout<E> {
      * 
      * @return Property of the maximum allowed width offset.
      */
-    ReadOnlyDoubleProperty maxAllowedWidth();
+    DoubleProperty maxAllowedWidth();
     
     /**
      * Maximum allowed height offset when
@@ -72,5 +72,5 @@ public interface ConstrainedLayout<E> extends Layout<E> {
      *
      * @return Property of the maximum allowed height offset.
      */
-    ReadOnlyDoubleProperty maxAllowedHeight();
+    DoubleProperty maxAllowedHeight();
 }

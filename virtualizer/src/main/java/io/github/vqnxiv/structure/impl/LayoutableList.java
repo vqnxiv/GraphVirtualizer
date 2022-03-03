@@ -29,7 +29,26 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
         super(el);
     }
 
-    
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @param e The elements with its old coordinates.
+     * @param x New X coordinate.
+     * @param y New Y coordinate.
+     */
+    @Override
+    public void repositionTo(CoordinatesElement<E> e, double x, double y) {
+        int i = elements.indexOf(e);
+        if(i < 0) {
+            return;
+        }
+        
+        var e2 = elements.get(i);
+        e2.setX(x);
+        e2.setY(y);
+    }
+
     /**
      * {@inheritDoc}
      *
@@ -38,16 +57,7 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
      */
     @Override
     public void repositionTo(CoordinatesElement<E> e, Point2D p) {
-        try {
-            // in case its a deep copy or its not in the list
-            var e2 = elements.get(elements.indexOf(e));
-            e2.setX(p.getX());
-            e2.setY(p.getY());
-        }
-        catch(IndexOutOfBoundsException ex) {
-            // ignore for now
-        }
-
+        repositionTo(e, p.getX(), p.getY());
     }
 
     /**

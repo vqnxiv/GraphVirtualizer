@@ -14,6 +14,7 @@ import javafx.geometry.Point2D;
  */
 public abstract class AbstractVirtualizer implements Virtualizer {
 
+    // todo: remake w/ listeners instead of anonymous classes 
     /**
      * The total height of the content.
      */

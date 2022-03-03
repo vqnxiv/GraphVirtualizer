@@ -24,6 +24,7 @@ class LayoutableMatrixTest {
         
         matrix.repositionTo(p, new Point2D(500, 500));
         matrix.repositionTo(p2, new Point2D(1_100, 1_100));
+        matrix.repositionTo(p, new Point2D(500, 5_000));
         matrix.repositionTo(p, new Point2D(5_000, 5_000));
     }
     

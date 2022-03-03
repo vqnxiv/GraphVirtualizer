@@ -25,7 +25,6 @@ public class VirtualizerRegion extends AbstractAbleRegion {
     /**
      * The virtualizer view.
      */
-    // not needed?
     private final Node view;
     
 
@@ -57,7 +56,7 @@ public class VirtualizerRegion extends AbstractAbleRegion {
         scale.xProperty().bind(zoomProperty());
         scale.yProperty().bind(zoomProperty());
         view.getTransforms().add(scale);
-
+        
         virtualizer.viewHeight().bind(heightProperty().divide(zoomProperty()));
         virtualizer.viewWidth().bind(widthProperty().divide(zoomProperty()));
 
@@ -79,9 +78,6 @@ public class VirtualizerRegion extends AbstractAbleRegion {
         super.layoutChildren();
 
         view.relocate(0, 0);
-
-        // not needed
-        // virtualizer.refreshView();
     }
 
     /**
