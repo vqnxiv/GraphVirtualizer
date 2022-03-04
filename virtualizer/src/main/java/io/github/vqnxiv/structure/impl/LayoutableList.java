@@ -2,11 +2,11 @@ package io.github.vqnxiv.structure.impl;
 
 
 import io.github.vqnxiv.structure.CoordinatesElement;
+import io.github.vqnxiv.structure.CoordinatesIterator;
 import io.github.vqnxiv.structure.LayoutableStructure;
 import javafx.geometry.Point2D;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -68,15 +68,92 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
      */
     @Override
     public void repositionAllTo(Map<CoordinatesElement<E>, Point2D> m) {
+        List<CoordinatesElement<E>> changed = new ArrayList<>(m.size());
+        
         for(var e : m.entrySet()) {
-            try {
-                var e2 = elements.get(elements.indexOf(e.getKey()));
-                e2.setX(e.getValue().getX());
-                e2.setY(e.getValue().getY());
+            int i = elements.indexOf(e.getKey());
+            if(i < 0) {
+                continue;
             }
-            catch(IndexOutOfBoundsException ex) {
-                // ignore for now
-            }
+            
+            var e2 = elements.get(i);
+            e2.setX(e.getValue().getX());
+            e2.setY(e.getValue().getY());
+            changed.add(e2);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return an Iterator.
+     */
+    @Override
+    public CoordinatesIterator<CoordinatesElement<E>> iterator() {
+        return new LayoutableIterator();
+    }
+
+    
+    /**
+     * Extension of {@link io.github.vqnxiv.structure.impl.CoordinatesList.CoordsListIterator}
+     * to support repositioning elements.
+     */
+    protected class LayoutableIterator extends CoordsListIterator {
+
+        /**
+         * Last seen element.
+         */
+        private CoordinatesElement<E> lastElt;
+
+
+        /**
+         * Constructor.
+         */
+        protected LayoutableIterator() { }
+        
+        
+        /**
+         * Getter for the last seen element.
+         *
+         * @return The last seen element.
+         */
+        // not needed? for iterator.remove() can just itr.remove()
+        // => then need protected getter for itr
+        protected CoordinatesElement<E> lastElt() {
+            return lastElt;
+        }
+        
+        /**
+         * Returns the next element in the iteration.
+         *
+         * @return the next element in the iteration
+         * @throws NoSuchElementException if the iteration has no more elements
+         */
+        @Override
+        public CoordinatesElement<E> next() {
+            lastElt = super.next();
+            return lastElt;
+        }
+
+        /**
+         * Repositions the last element returned this iterator (optional operation).
+         *
+         * @param x New X coordinate.
+         * @param y New Y coordinate.
+         */
+        @Override
+        public void reposition(double x, double y) {
+            repositionTo(lastElt, x, y);
+        }
+
+        /**
+         * Repositions the last element returned this iterator (optional operation).
+         *
+         * @param p New X/Y coordinates.
+         */
+        @Override
+        public void reposition(Point2D p) {
+            repositionTo(lastElt, p);
         }
     }
 }

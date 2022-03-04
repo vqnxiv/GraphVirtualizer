@@ -1,17 +1,16 @@
 package io.github.vqnxiv.structure.impl;
 
 
-import io.github.vqnxiv.layout.Layout;
 import io.github.vqnxiv.structure.CoordinatesElement;
 import io.github.vqnxiv.structure.CoordinatesIterator;
 import io.github.vqnxiv.structure.CoordinatesStructure;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Point2D;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 
 /**
@@ -111,7 +110,7 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
      * @return Max height property.
      */
     @Override
-    public DoubleProperty maximumHeight() {
+    public ReadOnlyDoubleProperty maximumHeight() {
         return maxHeight;
     }
 
@@ -121,7 +120,7 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
      * @return Max width property.
      */
     @Override
-    public DoubleProperty maximumWidth() {
+    public ReadOnlyDoubleProperty maximumWidth() {
         return maxWidth;
     }
 
@@ -148,7 +147,7 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
 
     /**
      * Iterator for this class. Protected so that extension of
-     * this class can reuse this as a base (e.g add remove for mutable collection, etc).
+     * this class can reuse this as a base (e.g place remove for mutable collection, etc).
      * <p>
      * No concurrent modification checking is done as this iterator is a simple wrapper
      * around a list iterator, just like this structure is a wrapper around an arraylist.
@@ -159,14 +158,16 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
          * Iterator backing up this iterator.
          */
         private final Iterator<CoordinatesElement<E>> itr;
+        
 
         /**
          * Constructor.
          */
         protected CoordsListIterator() {
-            itr = elements.listIterator();
+            itr = elements.iterator();
         }
-        
+
+ 
         /**
          * Returns {@code true} if the iteration has more elements.
          * (In other words, returns {@code true} if {@link #next} would

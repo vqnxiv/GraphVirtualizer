@@ -5,7 +5,9 @@ import io.github.vqnxiv.structure.CoordinatesElement;
 import io.github.vqnxiv.structure.LayoutableStructure;
 import javafx.geometry.Point2D;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 
@@ -109,18 +111,7 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
      */
     @Override
     public void repositionTo(CoordinatesElement<E> e, double x, double y) {
-        var p2 = getCoordsInArray(e);
-
-        if(!elements[(int) p2.getX()][(int) p2.getY()].remove(e)) {
-            return;
-        }
-
-        ensureSize(x, y);
-        var p3 = getCoordsInArray(x, y);
-        e.setX(x);
-        e.setY(y);
-        elements[(int) p3.getX()][(int) p3.getY()].add(e);
-        modified();
+        move(e, x, y);
     }
 
     /**
@@ -142,6 +133,10 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
      */
     @Override
     public void repositionAllTo(Map<CoordinatesElement<E>, Point2D> m) {
-        modified();
+        List<CoordinatesElement<E>> changed = new ArrayList<>(m.size());
+
+        for(var e : m.entrySet()) {
+
+        }
     }
 }

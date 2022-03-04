@@ -1,7 +1,7 @@
 package io.github.vqnxiv.structure;
 
 
-import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.geometry.Point2D;
 
 import java.util.Collection;
@@ -20,7 +20,9 @@ import java.util.Collection;
  * @see CoordinatesIterator
  */
 // todo: extends Collection<E>? w/ default throws for all mutable methods
-// iterator() clash 
+// ==> extends Collection<E>, Collection<CoordinatesElement<E>>
+// potential erasure clash? (removeAll, retainAll, containsAll, addAll)
+// iterator() clash + other signatures too? spliterator, stream, toArray, etc
 public interface CoordinatesStructure<E> extends CoordinatesIterable<CoordinatesElement<E>> {
 
     
@@ -52,12 +54,12 @@ public interface CoordinatesStructure<E> extends CoordinatesIterable<Coordinates
      * 
      * @return Max height property.
      */
-    DoubleProperty maximumHeight();
+    ReadOnlyDoubleProperty maximumHeight();
 
     /**
      * Maxmimum width of this structure.
      * 
      * @return Max width property.
      */
-    DoubleProperty maximumWidth();
+    ReadOnlyDoubleProperty maximumWidth();
 }

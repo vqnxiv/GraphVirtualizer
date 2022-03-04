@@ -225,6 +225,10 @@ public class NodeVirtualizer<E> extends AbstractVirtualizer {
                     }
                 }
             }
+            else {
+                // shouldn't happen but better safe than sorry
+                pool.release(n);
+            }
         }
         
         previousTopLeft = new Point2D(topLeftX, topLeftY);

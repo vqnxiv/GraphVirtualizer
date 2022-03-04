@@ -5,7 +5,7 @@ import java.util.*;
 
 
 /**
- * This is similar to {@link SetNodeNodePool}, except for
+ * This is similar to {@link SetNodePool}, except for
  * the difference that unused nodes are cleared after
  * some time ({@code aliveTimeMS)} if the pool contains 
  * more nodes than its minimum size ({@code coreSize}).
@@ -14,9 +14,9 @@ import java.util.*;
  *
  * @see DecoratedNode
  * @see DecoratedNodeFactory
- * @see SetNodeNodePool
+ * @see SetNodePool
  */
-public class TimedNodeNodePool<D> implements DecoratedNodePool<D> {
+public class TimedNodePool<D> implements DecoratedNodePool<D> {
 
     /**
      * The default life duration for an unused node, in ms.
@@ -90,7 +90,7 @@ public class TimedNodeNodePool<D> implements DecoratedNodePool<D> {
         public boolean equals(Object o) {
             if(this == o) return true;
             
-            if(o instanceof TimedNodeNodePool<?>.TimestampedDecorated td) {
+            if(o instanceof TimedNodePool<?>.TimestampedDecorated td) {
                 return decoratedNode.equals(td.getDecorated());
             }
             
@@ -159,7 +159,7 @@ public class TimedNodeNodePool<D> implements DecoratedNodePool<D> {
      * 
      * @param factory DecoratedNode factory.
      */
-    public TimedNodeNodePool(DecoratedNodeFactory<D> factory) {
+    public TimedNodePool(DecoratedNodeFactory<D> factory) {
         this(factory, DEFAULT_KEEP_ALIVE_TIME_MS, DEFAULT_CORE_SIZE);
     }
 
@@ -170,7 +170,7 @@ public class TimedNodeNodePool<D> implements DecoratedNodePool<D> {
      * @param keepAlivetime Keep alive time.
      * @param coreSize      Core size.
      */
-    public TimedNodeNodePool(DecoratedNodeFactory<D> factory, long keepAlivetime, int coreSize) {
+    public TimedNodePool(DecoratedNodeFactory<D> factory, long keepAlivetime, int coreSize) {
         Objects.requireNonNull(factory);
 
         this.factory = factory;

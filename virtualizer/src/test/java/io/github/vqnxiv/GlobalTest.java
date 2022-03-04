@@ -1,7 +1,7 @@
 package io.github.vqnxiv;
 
 
-import io.github.vqnxiv.node.TimedNodeNodePool;
+import io.github.vqnxiv.node.TimedNodePool;
 import io.github.vqnxiv.structure.CoordinatesElement;
 import io.github.vqnxiv.node.DecoratedNode;
 import io.github.vqnxiv.structure.impl.CoordinatesMatrix;
@@ -123,8 +123,8 @@ public class GlobalTest extends Application {
         double z = 20_000d;
         // var struct = new CoordinatesList<>(l);
         var struct = new CoordinatesMatrix<>(l, z, z, n, n, 1.5f, 1.5f, n, n);
-        // var pool = new SetNodeNodePool<>((CoordinatesElement<Thing> t) -> new DecoratedNodeLabel<>(t));
-        var pool = new TimedNodeNodePool<>(
+        // var pool = new SetNodePool<>((CoordinatesElement<Thing> t) -> new DecoratedNodeLabel<>(t));
+        var pool = new TimedNodePool<>(
             (CoordinatesElement<Thing> t) -> new DecoratedNodeLabel<>(t),
             10_000L,
             20);

@@ -13,8 +13,8 @@ import java.util.Optional;
  *
  * @see DecoratedNode
  * @see DecoratedNodeFactory
- * @see SetNodeNodePool
- * @see TimedNodeNodePool
+ * @see SetNodePool
+ * @see TimedNodePool
  */
 public interface DecoratedNodePool<D> {
 

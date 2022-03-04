@@ -6,6 +6,7 @@ import io.github.vqnxiv.structure.CoordinatesIterator;
 import io.github.vqnxiv.structure.CoordinatesStructure;
 import io.github.vqnxiv.structure.LocalizedStructure;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Point2D;
 
@@ -22,7 +23,7 @@ import java.util.function.Consumer;
  * <br> and <br>
  * {@code j = element.y / maxHeight * colNumber} 
  * <br> gives <br>
- * {@code array[i][j].add(element)}.
+ * {@code array[i][j].place(element)}.
  * <p>
  * The array is initially 5*5 (or whatever {@link #DEFAULT_ROW_NUMBER}
  * and {@link #DEFAULT_COL_NUMBER} are), unless specified otherwise
@@ -114,7 +115,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     /**
      * The elements.
      */
-    protected List<CoordinatesElement<E>>[][] elements;
+    private List<CoordinatesElement<E>>[][] elements;
     
     /**
      * Current row range.
@@ -123,7 +124,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     // maxHeight and maxWidth may become desynced due to
     // bindings
     // solution => ReadOnly getters and update on reposition()
-    // and add() and constructors if greater than current value
+    // and place() and constructors if greater than current value
     private int rowRange;
 
     /**
@@ -286,8 +287,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     /**
      * Should be called whenever {@link #elements} is modified.
      */
-    // todo: private elements and add protected methods which call this
-    protected void modified() {
+    private void modified() {
         modCount++;
     }
     
@@ -298,7 +298,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @param p Coordinates.
      * @return Point2D which contains the coordinates.
      */
-    protected Point2D getCoordsInArray(CoordinatesElement<E> p) {
+    protected Point2D indexesOf(CoordinatesElement<E> p) {
         int i = (int) (p.getX() / maxWidth.get() * elements.length);
         int j = (int) (p.getY() / maxHeight.get() * elements[0].length);
         return new Point2D(i, j);
@@ -311,7 +311,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @param p Coordinates.
      * @return Point2D which contains the coordinates.
      */
-    protected Point2D getCoordsInArray(Point2D p) {
+    protected Point2D indexesOf(Point2D p) {
         int i = (int) (p.getX() / maxWidth.get() * elements.length);
         int j = (int) (p.getY() / maxHeight.get() * elements[0].length);
         return new Point2D(i, j);
@@ -325,12 +325,98 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @param y Y coordinate.
      * @return Point2D which contains the coordinates.
      */
-    protected Point2D getCoordsInArray(double x, double y) {
+    protected Point2D indexesOf(double x, double y) {
         int i = (int) (x / maxWidth.get() * elements.length);
         int j = (int) (y / maxHeight.get() * elements[0].length);
         return new Point2D(i, j);
     }
 
+    /**
+     * Helper method which checks whether {@link #elements}
+     * contains the given element.
+     * 
+     * @param c The element to check.
+     * @return {@code true} if it contains it; {@code false} otherwise.
+     */
+    protected boolean contains(CoordinatesElement<E> c) {
+        // var p = indexesOf(c);
+        // return elements[(int) p.getX()][(int) p.getY()].contains(c);
+        return getListAt(indexesOf(c)).contains(c);
+    }
+
+    /**
+     * Helper method which adds the given element 
+     * to {@link #elements}.
+     *
+     * @param c The element to place.
+     * @return {@code true} if it was added; {@code false} otherwise.
+     */
+    protected boolean place(CoordinatesElement<E> c) {
+        // var p = indexesOf(c);
+        // if(!elements[(int) p.getX()][(int) p.getY()].add(c)) {
+        if(!getListAt(indexesOf(c)).add(c)) {
+            return false;
+        }
+        modified();
+        return true;
+    }
+
+    /**
+     * Helper method which removes the given element 
+     * from {@link #elements}.
+     *
+     * @param c The element to remove.
+     * @return {@code true} if it was removed; {@code false} otherwise.
+     */
+    protected boolean remove(CoordinatesElement<E> c) {
+        // var p = indexesOf(c);
+        // if(!elements[(int) p.getX()][(int) p.getY()].remove(c)) {
+        if(!getListAt(indexesOf(c)).remove(c)) {
+            return false;
+        }
+        modified();
+        return true;
+    }
+
+    /**
+     * Helper method which an existing moves an element. 
+     * Resizes the array if needed.
+     * 
+     * @param c The element to move.
+     * @param x New X coordinate.
+     * @param y New Y coordinate.
+     * @return {@code true} if the element was present and successfully moved;
+     * {@code false} otherwise.
+     */
+    protected boolean move(CoordinatesElement<E> c, double x, double y) {
+        if(!getListAt(indexesOf(c)).remove(c)) {
+            return false;
+        }
+        
+        ensureSize(x, y);
+        getListAt(indexesOf(x, y)).add(c);
+        modified();
+        return true;
+    }
+
+    /**
+     * Helper method which an existing moves an element. 
+     * Resizes the array if needed.
+     * 
+     * @param c The element to move.
+     * @param p The new coordinates.
+     * @return {@code true} if the element was present and successfully moved;
+     * {@code false} otherwise.
+     */
+    protected boolean move(CoordinatesElement<E> c, Point2D p) {
+        return move(c, p);
+    }
+    
+    // add validation
+    private List<CoordinatesElement<E>> getListAt(Point2D p) {
+        return elements[(int) p.getX()][(int) p.getY()];
+    }
+    
 
     /**
      * Ensures that the structure can correctly store the given coordinates.
@@ -484,7 +570,6 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         return l;
     }
     
-    
     /**
      * {@inheritDoc}
      *
@@ -503,7 +588,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return Max height property.
      */
     @Override
-    public DoubleProperty maximumHeight() {
+    public ReadOnlyDoubleProperty maximumHeight() {
         return maxHeight;
     }
 
@@ -513,7 +598,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return Max width property.
      */
     @Override
-    public DoubleProperty maximumWidth() {
+    public ReadOnlyDoubleProperty maximumWidth() {
         return maxWidth;
     }
     
@@ -546,7 +631,6 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      */
     protected class MatrixIterator implements CoordinatesIterator<CoordinatesElement<E>> {
 
-        // todo: private or protected?
         /**
          * Current row index.
          */
@@ -589,7 +673,6 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
          */
         protected MatrixIterator() {
             expectedModCount = modCount;
-            
         }
         
         /**

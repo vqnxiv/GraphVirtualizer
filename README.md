@@ -16,7 +16,7 @@ the controls may be useful for other uses so they are in a different module.
 on which it places and moves its elements when it is shifted.
 * The `view` can be displayed in a JFX scene like any other `Node`. 
 An extension of `Region` whose role is to display and control a `Virtualizer`
-and its`view` is provided (`AbstractAbleRegion` & `VirtualizerRegion`).
+and its `view` is provided (`AbstractAbleRegion` & `VirtualizerRegion`).
 * The `Virtualizer` gets its elements from a `CoordinatesStructure`,
 which are data structures that contain elements wrapped in `CoordinatesElement` 
 (and thus are linked to a pair of coordinates [x, y]).

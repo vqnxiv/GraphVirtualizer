@@ -43,8 +43,8 @@ public abstract class AbstractLayout<E> implements Layout<E> {
         maxUsedWidth = new SimpleDoubleProperty(0);
         maxUsedHeight = new SimpleDoubleProperty(0);
         
-        structure.maximumWidth().bind(maxUsedWidth);
-        structure.maximumHeight().bind(maxUsedHeight);
+        //structure.maximumWidth().bind(maxUsedWidth);
+        //structure.maximumHeight().bind(maxUsedHeight);
     }
 
     

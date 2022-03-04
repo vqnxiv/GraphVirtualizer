@@ -12,9 +12,9 @@ import java.util.*;
  *
  * @see DecoratedNode
  * @see DecoratedNodeFactory
- * @see TimedNodeNodePool
+ * @see TimedNodePool
  */
-public class SetNodeNodePool<D> implements DecoratedNodePool<D> {
+public class SetNodePool<D> implements DecoratedNodePool<D> {
 
     /**
      * Nodes which aren't in use and can be decorated.
@@ -39,7 +39,7 @@ public class SetNodeNodePool<D> implements DecoratedNodePool<D> {
      * 
      * @param factory Factory.
      */
-    public SetNodeNodePool(DecoratedNodeFactory<D> factory) {
+    public SetNodePool(DecoratedNodeFactory<D> factory) {
         Objects.requireNonNull(factory);
         
         this.factory = factory;
