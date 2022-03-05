@@ -12,6 +12,7 @@ import javafx.geometry.Point2D;
 
 import java.lang.reflect.Array;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 
@@ -23,7 +24,7 @@ import java.util.function.Consumer;
  * <br> and <br>
  * {@code j = element.y / maxHeight * colNumber} 
  * <br> gives <br>
- * {@code array[i][j].place(element)}.
+ * {@code array[i][j].add(element)}.
  * <p>
  * The array is initially 5*5 (or whatever {@link #DEFAULT_ROW_NUMBER}
  * and {@link #DEFAULT_COL_NUMBER} are), unless specified otherwise
@@ -271,6 +272,12 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         this.maxColNumber = maxColNumber;
 
         elements = (List<CoordinatesElement<E>>[][]) Array.newInstance(List.class, initialRowNumber, initialColNumber);
+
+        for(var t : elements) {
+            for(int i = 0; i < t.length; i++) {
+                t[i] = new ArrayList<>();
+            }
+        }
         
         maxWidth.set(initialWidth);
         maxHeight.set(initialHeight);
@@ -279,7 +286,13 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         colRange = (int) (maxHeight.get() / initialColNumber);
         
         for(E e : el) {
-            elements[0][0].add(new CoordinatesElement<>(e, 0, 0));
+            // for testing purposes only
+            // until a layout can be injected
+            double x = ThreadLocalRandom.current().nextDouble(initialWidth);
+            double y = ThreadLocalRandom.current().nextDouble(initialWidth);
+            
+            place(new CoordinatesElement<>(e, x, y));
+            // elements[0][0].add(new CoordinatesElement<>(e, 0, 0));
         }
     }
 
@@ -339,8 +352,6 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return {@code true} if it contains it; {@code false} otherwise.
      */
     protected boolean contains(CoordinatesElement<E> c) {
-        // var p = indexesOf(c);
-        // return elements[(int) p.getX()][(int) p.getY()].contains(c);
         return getListAt(indexesOf(c)).contains(c);
     }
 
@@ -352,8 +363,6 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return {@code true} if it was added; {@code false} otherwise.
      */
     protected boolean place(CoordinatesElement<E> c) {
-        // var p = indexesOf(c);
-        // if(!elements[(int) p.getX()][(int) p.getY()].add(c)) {
         if(!getListAt(indexesOf(c)).add(c)) {
             return false;
         }
@@ -369,8 +378,6 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return {@code true} if it was removed; {@code false} otherwise.
      */
     protected boolean remove(CoordinatesElement<E> c) {
-        // var p = indexesOf(c);
-        // if(!elements[(int) p.getX()][(int) p.getY()].remove(c)) {
         if(!getListAt(indexesOf(c)).remove(c)) {
             return false;
         }

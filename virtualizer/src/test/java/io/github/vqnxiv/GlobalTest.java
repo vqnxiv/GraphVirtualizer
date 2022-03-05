@@ -120,7 +120,7 @@ public class GlobalTest extends Application {
         }
         
         int n = 1000;
-        double z = 20_000d;
+        double z = 200_000d;
         // var struct = new CoordinatesList<>(l);
         var struct = new CoordinatesMatrix<>(l, z, z, n, n, 1.5f, 1.5f, n, n);
         // var pool = new SetNodePool<>((CoordinatesElement<Thing> t) -> new DecoratedNodeLabel<>(t));

@@ -2,6 +2,7 @@ package io.github.vqnxiv.view;
 
 
 import io.github.vqnxiv.misc.BoundedDoubleProperty;
+import javafx.beans.Observable;
 import javafx.beans.property.DoubleProperty;
 import javafx.geometry.Point2D;
 
@@ -14,79 +15,36 @@ import javafx.geometry.Point2D;
  */
 public abstract class AbstractVirtualizer implements Virtualizer {
 
-    // todo: remake w/ listeners instead of anonymous classes 
+
     /**
      * The total height of the content.
      */
-    protected final BoundedDoubleProperty totalHeight = new BoundedDoubleProperty(0, Double.MAX_VALUE) {
-        // automatically updates the max value for the constrained dimensions
-        // and for the max offset
-        @Override
-        protected void invalidated() {
-            viewHeight.setMax(get());
-            heightOffset.setMax(get() - viewHeight.get());
-            onTotalChanged();
-        }
-    };
+    protected final BoundedDoubleProperty totalHeight = new BoundedDoubleProperty(0, Double.MAX_VALUE);
 
     /**
      * The total size of the content.
      */
-    protected final BoundedDoubleProperty totalWidth = new BoundedDoubleProperty(0, Double.MAX_VALUE) {
-        @Override
-        protected void invalidated() {
-            viewWidth.setMax(get());
-            widthOffset.setMax(get() - viewWidth.get());
-            onTotalChanged();
-        }
-    };
+    protected final BoundedDoubleProperty totalWidth = new BoundedDoubleProperty(0, Double.MAX_VALUE);
+    
+    /**
+     * The coordinates of the area this object is displaying.
+     */
+    protected final BoundedDoubleProperty heightOffset = new BoundedDoubleProperty(0, Double.MAX_VALUE);
 
     /**
      * The coordinates of the area this object is displaying.
      */
-    protected final BoundedDoubleProperty heightOffset = new BoundedDoubleProperty(0, Double.MAX_VALUE) {
-        @Override
-        protected void invalidated() {
-            if(!skipNext) {
-                onOffsetChanged();
-            }
-        }
-    };
-
-    /**
-     * The coordinates of the area this object is displaying.
-     */
-    protected final BoundedDoubleProperty widthOffset = new BoundedDoubleProperty(0, Double.MAX_VALUE) {
-        @Override
-        protected void invalidated() {
-            if(!skipNext) {
-                onOffsetChanged();
-            }
-        }
-    };
+    protected final BoundedDoubleProperty widthOffset = new BoundedDoubleProperty(0, Double.MAX_VALUE);
 
     /**
      * The height of the area that this object is displaying.
      */
-    protected final BoundedDoubleProperty viewHeight = new BoundedDoubleProperty(0, Double.MAX_VALUE) {
-        @Override
-        protected void invalidated() {
-            heightOffset.setMax(totalHeight.get() - get());
-            onViewChanged();
-        }
-    };
+    protected final BoundedDoubleProperty viewHeight = new BoundedDoubleProperty(0, Double.MAX_VALUE);
 
     /**
      * The width of the area that this object is displaying.
      */
-    protected final BoundedDoubleProperty viewWidth = new BoundedDoubleProperty(0, Double.MAX_VALUE) {
-        @Override
-        protected void invalidated() {
-            widthOffset.setMax(totalWidth.get() - get());
-            onViewChanged();
-        }
-    };
-
+    protected final BoundedDoubleProperty viewWidth = new BoundedDoubleProperty(0, Double.MAX_VALUE);
 
     /**
      * So we can fire only one abstract onChanged when setting both height and width
@@ -97,7 +55,53 @@ public abstract class AbstractVirtualizer implements Virtualizer {
     /**
      * Constructor.
      */
-    protected AbstractVirtualizer() {}
+    protected AbstractVirtualizer() {
+        totalWidth.addListener(obs -> updateTotal(viewWidth, totalWidth, widthOffset));
+        totalHeight.addListener(obs -> updateTotal(viewHeight, totalHeight, heightOffset));
+        
+        widthOffset.addListener(this::updateOffset);
+        heightOffset.addListener(this::updateOffset);
+        
+        viewWidth.addListener(obs -> updateView(viewWidth, totalWidth, widthOffset));
+        viewHeight.addListener(obs -> updateView(viewHeight, totalHeight, heightOffset));
+    }
+
+
+    /**
+     * Called when a total dimension might be changed.
+     * 
+     * @param view View dimension.
+     * @param total Total dimension.
+     * @param offset Offset dimension.
+     */
+    private void updateTotal(BoundedDoubleProperty view, DoubleProperty total, BoundedDoubleProperty offset) {
+        view.setMax(total.get());
+        offset.setMax(total.get() - view.get());
+        onTotalChanged();
+    }
+
+    /**
+     * Called when an offset dimension might be changed.
+     * 
+     * @param obs Ignored.
+     */
+    private void updateOffset(Observable obs) {
+        if(!skipNext) {
+            onOffsetChanged();
+        }
+    }
+
+    /**
+     * Called when a view dimension might be changed.
+     *
+     * @param view View dimension.
+     * @param total Total dimension.
+     * @param offset Offset dimension.
+     */
+    private void updateView(DoubleProperty view, DoubleProperty total, BoundedDoubleProperty offset) {
+        offset.setMax(total.get() - view.get());
+        onViewChanged();
+    }
     
     
     /**

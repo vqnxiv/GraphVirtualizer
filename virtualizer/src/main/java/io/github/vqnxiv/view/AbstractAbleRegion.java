@@ -2,6 +2,7 @@ package io.github.vqnxiv.view;
 
 
 import io.github.vqnxiv.misc.BoundedDoubleProperty;
+import javafx.beans.Observable;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -27,74 +28,51 @@ public abstract class AbstractAbleRegion extends Region {
     /**
      * The default minimum zoom level.
      */
-    protected static final double DEFAULT_MIN_ZOOM = 0.1d;
+    public static final double DEFAULT_MIN_ZOOM = 0.1d;
 
     /**
      * The default maximum zoom level.
      */
-    protected static final double DEFAULT_MAX_ZOOM = 2.0d;
+    public static final double DEFAULT_MAX_ZOOM = 2.0d;
 
     /**
      * The default zoom unit ('one mouse wheel rotation').
      */
-    protected static final double DEFAULT_ZOOM_STEP = 0.1d;
+    public static final double DEFAULT_ZOOM_STEP = 0.1d;
 
 
     /**
      * Whether this region can be scrolled.
      */
-    protected final BooleanProperty scrollable = new SimpleBooleanProperty();
+    private final BooleanProperty scrollable = new SimpleBooleanProperty();
 
-    // todo: listeners
+   
     /**
      * Whether this region can be panned.
      */
-    protected final BooleanProperty pannable = new SimpleBooleanProperty() {
-        @Override
-        protected void invalidated() {
-            if(get()) {
-                AbstractAbleRegion.this.setOnMousePressed(mousePressed);
-                AbstractAbleRegion.this.setOnMouseDragged(mouseDragged);
-            }
-            else {
-                AbstractAbleRegion.this.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressed);
-                AbstractAbleRegion.this.removeEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDragged);
-            }
-        }
-    };
-
+    private final BooleanProperty pannable = new SimpleBooleanProperty();
+    
     /**
      * Whether this region can be zoomed.
      */
-    protected final BooleanProperty zoomable = new SimpleBooleanProperty() {
-        @Override
-        protected void invalidated() {
-            if(get()) {
-                AbstractAbleRegion.this.setOnScroll(scrolled);
-            }
-            else {
-                AbstractAbleRegion.this.removeEventHandler(ScrollEvent.SCROLL, scrolled);
-            }
-        }
-    };
-
+    private final BooleanProperty zoomable = new SimpleBooleanProperty();
 
     /**
      * Whether to show the horizontal scrollbar.
      */
-    protected final ObjectProperty<ScrollPane.ScrollBarPolicy> hbarPolicy =
+    private final ObjectProperty<ScrollPane.ScrollBarPolicy> hbarPolicy =
         new SimpleObjectProperty<>(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
     /**
      * Whether to show the vertical scrollbar.
      */
-    protected final ObjectProperty<ScrollPane.ScrollBarPolicy> vbarPolicy =
+    private final ObjectProperty<ScrollPane.ScrollBarPolicy> vbarPolicy =
         new SimpleObjectProperty<>(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
     /**
      * The current zoom level.
      */
-    protected final BoundedDoubleProperty zoom =
+    private final BoundedDoubleProperty zoom =
         new BoundedDoubleProperty(DEFAULT_MIN_ZOOM, DEFAULT_MAX_ZOOM);
 
 
@@ -107,12 +85,6 @@ public abstract class AbstractAbleRegion extends Region {
      * Vertical scrollbar.
      */
     protected final ScrollBar vBar = new ScrollBar();
-
-    /**
-     * The small corner between the two scrollbars when they're both showing.
-     */
-    // not needed?
-    // private final StackPane barsCorner = new StackPane();
 
 
     /**
@@ -136,6 +108,9 @@ public abstract class AbstractAbleRegion extends Region {
         handleDraggedBy(dx, dy);
     };
 
+    /**
+     * Calls {@link #handleZoomedAt(double, double, double)} on mousewheel scroll.
+     */
     private final EventHandler<ScrollEvent> scrolled = e -> {
         // getDeltaY -> scroll 'quantity' so we get the number of scroll wheel rotations
         // when we divide by getMultiplier (e.g 40 / 40 = 1, -80 / 40 = -2).
@@ -172,6 +147,9 @@ public abstract class AbstractAbleRegion extends Region {
     protected AbstractAbleRegion(double zoom, boolean scrollable, boolean pannable, boolean zoomable) {
         super();
 
+        this.pannable.addListener(this::updatePannable);
+        this.zoomable.addListener(this::updateZoomable);
+
         this.zoom.set(zoom);
         this.scrollable.set(scrollable);
         this.pannable.set(pannable);
@@ -179,10 +157,41 @@ public abstract class AbstractAbleRegion extends Region {
 
         hBar.setOrientation(Orientation.HORIZONTAL);
         vBar.setOrientation(Orientation.VERTICAL);
-
-        getChildren().addAll(vBar, hBar); //, barsCorner);
+        
+        getChildren().addAll(vBar, hBar);
     }
 
+
+    /**
+     * Updates {@link #pannable} listeners.
+     * 
+     * @param onlyHereForMethodRef Ignored.
+     */
+    private void updatePannable(Observable onlyHereForMethodRef) {
+        if(pannable.get()) {
+            AbstractAbleRegion.this.setOnMousePressed(mousePressed);
+            AbstractAbleRegion.this.setOnMouseDragged(mouseDragged);
+        }
+        else {
+            AbstractAbleRegion.this.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressed);
+            AbstractAbleRegion.this.removeEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDragged);
+        }
+    }
+
+    /**
+     * Updates {@link #zoomable} listeners.
+     *
+     * @param onlyHereForMethodRef Ignored.
+     */
+    private void updateZoomable(Observable onlyHereForMethodRef) {
+        if(zoomable.get()) {
+            AbstractAbleRegion.this.setOnScroll(scrolled);
+        }
+        else {
+            AbstractAbleRegion.this.removeEventHandler(ScrollEvent.SCROLL, scrolled);
+        }
+    }
+    
 
     /**
      * Method to be implemented which should do whatever has to be done on mouse drag.
@@ -251,38 +260,36 @@ public abstract class AbstractAbleRegion extends Region {
         double totalHeight = getHeight();
         double totalWidth = getWidth();
 
-        // possibly inverse condition here and return early
-        // so its more readable if nothing else is added
-        if(scrollable.get()) {
-            boolean hbarVis = shouldHBarShow();
-            boolean vbarVis = shouldVBarShow();
-
-            double hbarH = (hbarVis) ? hBar.getHeight() : 0;
-            double vbarW = (vbarVis) ? vBar.getWidth() : 0;
-
-            hBar.setVisible(hbarVis);
-            if(hbarVis) {
-                hBar.resizeRelocate(
-                    0,
-                    snapPositionY(totalHeight - vbarW),
-                    snapSizeX(totalWidth - vbarW),
-                    hbarH
-                );
-            }
-
-            vBar.setVisible(vbarVis);
-            if(vbarVis) {
-                vBar.resizeRelocate(
-                    snapPositionX(totalWidth - vbarW),
-                    0,
-                    vbarW,
-                    snapSizeY(totalHeight - hbarH)
-                );
-            }
-        }
-        else {
+        if(!scrollable.get()) {
             vBar.setVisible(false);
             hBar.setVisible(false);
+            return;
+        }
+        
+        boolean hbarVis = shouldHBarShow();
+        boolean vbarVis = shouldVBarShow();
+
+        double hbarH = (hbarVis) ? hBar.getHeight() : 0;
+        double vbarW = (vbarVis) ? vBar.getWidth() : 0;
+
+        hBar.setVisible(hbarVis);
+        if(hbarVis) {
+            hBar.resizeRelocate(
+                0,
+                snapPositionY(totalHeight - vbarW),
+                snapSizeX(totalWidth - vbarW),
+                hbarH
+            );
+        }
+
+        vBar.setVisible(vbarVis);
+        if(vbarVis) {
+            vBar.resizeRelocate(
+                snapPositionX(totalWidth - vbarW),
+                0,
+                vbarW,
+                snapSizeY(totalHeight - hbarH)
+            );
         }
     }
 
