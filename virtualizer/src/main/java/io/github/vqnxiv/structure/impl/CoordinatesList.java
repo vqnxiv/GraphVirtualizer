@@ -10,6 +10,7 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Point2D;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 
@@ -49,8 +50,14 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
     public CoordinatesList(Collection<E> el) {
         elements = new ArrayList<>();
         
+        // testing purposes only
+        maxWidth.set(200_000d);
+        maxHeight.set(200_000d);
+        
         for(E e : el) {
-            elements.add(new CoordinatesElement<>(e, 0, 0));
+            double x = ThreadLocalRandom.current().nextDouble(200_000d);
+            double y = ThreadLocalRandom.current().nextDouble(200_000d);
+            elements.add(new CoordinatesElement<>(e, x, y));
         }
     }
 

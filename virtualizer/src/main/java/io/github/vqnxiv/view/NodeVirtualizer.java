@@ -190,6 +190,9 @@ public class NodeVirtualizer<E> extends AbstractVirtualizer {
             || bottomRightX <= previousTopLeft.getX() 
             || bottomRightY <= previousTopLeft.getY();
         
+        // todo: strict reduction check
+        // todo: no change check // => not needed?
+        
         if(noOverlap) {
             internal.getChildren().clear();
             pool.releaseAll(nodes);
@@ -201,7 +204,7 @@ public class NodeVirtualizer<E> extends AbstractVirtualizer {
 
         var possible = 
             (elements instanceof LocalizedStructure<E> && !noOverlap) ?
-                localizedGetFromPool(topLeftX, topLeftY) : 
+                localizedGetFromPool(topLeftX, topLeftY, bottomRightX, bottomRightY) : 
                 pool.getAll(elements.between(topLeftX, topLeftY, bottomRightX, bottomRightY));
         
         for(var n : possible) {
@@ -302,8 +305,8 @@ public class NodeVirtualizer<E> extends AbstractVirtualizer {
      * @param topLeftY Top left Y coordinate.
      * @return {@link Collection} of the nodes retrieved from {{@link #pool}}.
      */
-    // todo: fix inwards shifts (zoom out)
-    private Collection<DecoratedNode<CoordinatesElement<E>>> localizedGetFromPool(double topLeftX, double topLeftY) {
+    private Collection<DecoratedNode<CoordinatesElement<E>>> localizedGetFromPool(double topLeftX, double topLeftY,
+                                                                                  double bottomRightX, double bottomRightY) {
         
         Collection<DecoratedNode<CoordinatesElement<E>>> possible = new ArrayList<>();
         double xOffset = topLeftX - previousTopLeft.getX();
@@ -327,6 +330,16 @@ public class NodeVirtualizer<E> extends AbstractVirtualizer {
             var e = elements.between(nTopLeftX, nTopLeftY, nBottomRightX, nBottomRightY);
             possible.addAll(pool.getAll(e));
         }
+        // == 0 -> no changes; < 0 -> reduction
+        else if((xOffset = bottomRightX - previousBottomRight.getX()) > 0) {
+            nTopLeftY = previousTopLeft.getY() + yOffset;
+            nTopLeftX = previousBottomRight.getX() + yOffset;
+            nBottomRightX = bottomRightX;
+            nBottomRightY = bottomRightY;
+
+            var e = elements.between(nTopLeftX, nTopLeftY, nBottomRightX, nBottomRightY);
+            possible.addAll(pool.getAll(e));
+        }
         
         if(yOffset != 0) {
             nTopLeftX = previousTopLeft.getX() + xOffset;
@@ -340,6 +353,15 @@ public class NodeVirtualizer<E> extends AbstractVirtualizer {
                 nTopLeftY = previousTopLeft.getY() + yOffset;
                 nBottomRightY = previousTopLeft.getY();
             }
+
+            var e = elements.between(nTopLeftX, nTopLeftY, nBottomRightX, nBottomRightY);
+            possible.addAll(pool.getAll(e));
+        }
+        else if((yOffset = bottomRightY - previousBottomRight.getY()) > 0) {
+            nTopLeftX = previousTopLeft.getX() + xOffset;
+            nTopLeftY = previousBottomRight.getY() + xOffset;
+            nBottomRightX = bottomRightX;
+            nBottomRightY = bottomRightY;
 
             var e = elements.between(nTopLeftX, nTopLeftY, nBottomRightX, nBottomRightY);
             possible.addAll(pool.getAll(e));

@@ -4,6 +4,7 @@ package io.github.vqnxiv;
 import io.github.vqnxiv.node.TimedNodePool;
 import io.github.vqnxiv.structure.CoordinatesElement;
 import io.github.vqnxiv.node.DecoratedNode;
+import io.github.vqnxiv.structure.impl.CoordinatesList;
 import io.github.vqnxiv.structure.impl.CoordinatesMatrix;
 import io.github.vqnxiv.view.ThrottledNodeVirtualizer;
 import io.github.vqnxiv.view.VirtualizerRegion;
@@ -127,7 +128,8 @@ public class GlobalTest extends Application {
         var pool = new TimedNodePool<>(
             (CoordinatesElement<Thing> t) -> new DecoratedNodeLabel<>(t),
             10_000L,
-            20);
+            20
+        );
         
         
         // var nv = new NodeVirtualizer<>(struct, pool);
