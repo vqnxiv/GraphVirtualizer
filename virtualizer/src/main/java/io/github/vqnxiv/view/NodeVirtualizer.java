@@ -148,6 +148,8 @@ public class NodeVirtualizer<E> extends AbstractVirtualizer {
         // (particularly on the right and bottom sides) 
         internal.setPrefSize((getViewWidth() + lookAhead) * 1.1d, (getViewHeight() + lookAhead) * 1.1d);
         
+        // problem here is that it refreshes twice i.e on height change and on width change
+        // not a problem in throttled version though
         refreshView();
     }
     
@@ -182,7 +184,23 @@ public class NodeVirtualizer<E> extends AbstractVirtualizer {
 
         double bottomRightX = width + getViewWidth();
         double bottomRightY = height + getViewHeight();
-
+        
+        // no change
+        if(topLeftX == previousTopLeft.getX() && topLeftY == previousTopLeft.getY()
+        && bottomRightX == previousBottomRight.getX() && bottomRightY == previousBottomRight.getY()) {
+            return;
+        }
+        
+        // strict reduction of the view area 
+        // -> means it's just remove out of area + reposition
+        if(topLeftX <= previousTopLeft.getX() && topLeftY <= previousTopLeft.getY()
+        && bottomRightX <= previousBottomRight.getX() && bottomRightY <= previousBottomRight.getY()) {
+            filterOutBetween(topLeftX, topLeftY, bottomRightX, bottomRightY, width, height);
+            previousTopLeft = new Point2D(topLeftX, topLeftY);
+            previousBottomRight = new Point2D(bottomRightX, bottomRightY);
+            return;
+        }
+        
         // if any of these checks true, that means there is no overlap between
         // the current and the previous area (e.g scrollbar shift)
         boolean noOverlap = topLeftX >= previousBottomRight.getX() 
@@ -190,8 +208,6 @@ public class NodeVirtualizer<E> extends AbstractVirtualizer {
             || bottomRightX <= previousTopLeft.getX() 
             || bottomRightY <= previousTopLeft.getY();
         
-        // todo: strict reduction check
-        // todo: no change check // => not needed?
         
         if(noOverlap) {
             internal.getChildren().clear();

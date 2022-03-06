@@ -116,6 +116,7 @@ public class ThrottledNodeVirtualizer<E> extends NodeVirtualizer<E> {
         super.onOffsetChanged();
     }
     
+
     /**
      * {@inheritDoc}
      */
@@ -145,7 +146,7 @@ public class ThrottledNodeVirtualizer<E> extends NodeVirtualizer<E> {
      * updated.
      */
     private void doUpdate() {
-        
+        // move fxthread check in refresh
         if(Platform.isFxApplicationThread()) {
             var p = getNext();
             refreshTo(p.getX(), p.getY());

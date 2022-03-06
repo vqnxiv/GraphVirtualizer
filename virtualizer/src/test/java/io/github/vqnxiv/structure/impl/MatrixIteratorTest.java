@@ -19,13 +19,14 @@ class MatrixIteratorTest {
     CoordinatesMatrix<Pojo> matrix = new CoordinatesMatrix<>(l);
     
     @Test
-    void iteratorGetsAllElements() {
+    void iteratorGetsAllElementsAndEnds() {
         var l2 = new ArrayList<Pojo>();
         for(var e : matrix) {
             l2.add(e.getElement());
         }
         
-        assertEquals(l, l2);
+        assertTrue(l.containsAll(l2));
+        assertTrue(l2.containsAll(l));
     }
     
     @Test

@@ -363,6 +363,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return {@code true} if it was added; {@code false} otherwise.
      */
     protected boolean place(CoordinatesElement<E> c) {
+        ensureSize(c.getX(), c.getY());
         if(!getListAt(indexesOf(c)).add(c)) {
             return false;
         }
@@ -402,6 +403,8 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         
         ensureSize(x, y);
         getListAt(indexesOf(x, y)).add(c);
+        c.setX(x);
+        c.setY(y);
         modified();
         return true;
     }
@@ -416,14 +419,35 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * {@code false} otherwise.
      */
     protected boolean move(CoordinatesElement<E> c, Point2D p) {
-        return move(c, p);
+        return move(c, p.getX(), p.getY());
     }
-    
-    // add validation
+
+    /**
+     * Helper method which gets a list from {@link #elements}.
+     * 
+     * @param p Coordinates.
+     * @return The list.
+     */
     private List<CoordinatesElement<E>> getListAt(Point2D p) {
         return elements[(int) p.getX()][(int) p.getY()];
     }
-    
+
+    /**
+     * Gets the actual element in the array.
+     * @param c
+     * @return
+     */
+    // not needed because the actual one is removed on move
+    // so the given one becomes the new actual one
+    private Optional<CoordinatesElement<E>> getActual(CoordinatesElement<E> c) {
+        var l = getListAt(new Point2D(c.getX(), c.getY()));
+        int i = 0;
+        if((i =l.indexOf(c)) == -1) {
+            return Optional.empty();
+        }
+        
+        return Optional.of(l.get(i));
+    }
 
     /**
      * Ensures that the structure can correctly store the given coordinates.
@@ -436,7 +460,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         // e.g if ensureSize(p.x, p.y) p can be inside the array
         width++;
         height++;
-
+        
         if(width <= maxWidth.get() && height <= maxHeight.get()) {
             return;
         }
@@ -451,7 +475,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
             int j = (int) (e.getY() / newHeight * newElements[0].length);
             newElements[i][j].add(e);
         }
-
+        
         elements = newElements;
         
         rowRange = (int) newWidth / elements.length;
@@ -632,6 +656,10 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         }
     }
 
+    @Override
+    public String toString() {
+        return Arrays.deepToString(elements);
+    }
 
     /**
      * 3D iterator over {@link #elements}.
@@ -641,38 +669,43 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         /**
          * Current row index.
          */
-        protected int currentRow = 0;
+        private int currentRow = 0;
 
         /**
          * Current column index.
          */
-        protected int currentCol = 0;
+        private int currentCol = 0;
 
         /**
          * Current index in the current row and column.
          */
-        protected int currentIndex = -1;
+        private int currentIndex = -1;
         
         /**
          * Row index of the next element. {@code -1} if no next element.
          */
-        protected int nextRow = 0;
+        private int nextRow = 0;
 
         /**
          * Column index of the next element. {@code -1} if no next element.
          */
-        protected int nextCol = 0;
+        private int nextCol = 0;
 
         /**
          * Index of the next element. {@code -1} if no next element.
          */
-        protected int nextIndex = 0;
+        private int nextIndex = -1;
 
         /**
          * Expected modification count for concurrent modification.
          * Useless here as this version of the class is 'immutable'.
          */
         private final int expectedModCount;
+
+        /**
+         * Whether the end of the structure was reached.
+         */
+        private boolean reachedTheEnd = false;
         
 
         /**
@@ -680,6 +713,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
          */
         protected MatrixIterator() {
             expectedModCount = modCount;
+            updateNext(false);
         }
         
         /**
@@ -691,8 +725,8 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         public boolean hasNext() {
             checkForComod();
             
-            updateNext();
-            return nextRow != - 1;
+            updateNext(false);
+            return !reachedTheEnd;
         }
 
         /**
@@ -705,9 +739,9 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         public CoordinatesElement<E> next() {
             checkForComod();
             
-            updateNext();
+            updateNext(false);
             
-            if(nextRow == -1) {
+            if(reachedTheEnd) {
                 throw new NoSuchElementException();
             }
             
@@ -717,13 +751,51 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
             return elements[nextRow][nextCol].get(nextIndex);
         }
 
+
+        /**
+         * Getter for the potential next element.
+         * 
+         * @return Optional of the next element.
+         */
+        protected Optional<CoordinatesElement<E>> getPotentialNext() {
+            if(nextRow == -1) {
+                return Optional.empty();
+            }
+            
+            try {
+                return Optional.of(elements[nextRow][nextCol].get(nextIndex));
+            } catch(IndexOutOfBoundsException e) {
+                return Optional.empty();
+            }
+        }
+
+        /**
+         * Whether this iterator has reached the end of the matrix.
+         * 
+         * @return Whether this iterator has reached the end of the matrix.
+         */
+        protected boolean hasReachedTheEnd() {
+            return reachedTheEnd;
+        }
+
+        /**
+         * Getter for the expected modification count.
+         * 
+         * @return The expected modification count.
+         */
+        protected int expectedModCount() {
+            return expectedModCount;
+        }
+
         /**
          * Updates {@link #nextRow}, {@link #nextCol} and
          * {@link #nextIndex} to the coordinates of the next
          * element; sets to {@code -1} if there is none.
+         * 
+         * @param force Forces an update.
          */
-        private void updateNext() {
-            if(!shouldUpdate()) {
+        protected void updateNext(boolean force) {
+            if(!shouldUpdate() && !force) {
                 return;
             }
 
@@ -758,15 +830,17 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
             nextRow = -1;
             nextCol = -1;
             nextIndex= -1;
+            reachedTheEnd = true;
         }
-
+        
+        
         /**
          * Whether to search for the next element.
          * 
          * @return {@code true} if the next element should be searched.
          */
         private boolean shouldUpdate() {
-            return nextRow > -1 
+            return !reachedTheEnd
                 && currentIndex == nextIndex 
                 && currentCol == nextCol 
                 && currentRow == nextRow;
@@ -776,7 +850,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
          * Concurrent modification checker.
          */
         private void checkForComod() {
-            if(expectedModCount != modCount) {
+            if(expectedModCount() != modCount) {
                 throw new ConcurrentModificationException();
             }
         }

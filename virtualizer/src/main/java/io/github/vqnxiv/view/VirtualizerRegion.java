@@ -132,7 +132,8 @@ public class VirtualizerRegion extends AbstractAbleRegion {
      */
     @Override
     protected void handleZoomedAt(double oldZoom, double widthOffset, double heightOffset) {
-        double off = zoomProperty().get() / oldZoom - 1;
-        virtualizer.shiftBy(heightOffset * off, widthOffset * off);
+        // double off = zoomProperty().get() / oldZoom - 1;
+        // don't need to shift?
+        // virtualizer.shiftBy(heightOffset * off, widthOffset * off);
     }
 }

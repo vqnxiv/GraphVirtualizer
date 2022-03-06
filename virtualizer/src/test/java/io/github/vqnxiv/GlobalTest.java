@@ -6,6 +6,7 @@ import io.github.vqnxiv.structure.CoordinatesElement;
 import io.github.vqnxiv.node.DecoratedNode;
 import io.github.vqnxiv.structure.impl.CoordinatesList;
 import io.github.vqnxiv.structure.impl.CoordinatesMatrix;
+import io.github.vqnxiv.view.NodeVirtualizer;
 import io.github.vqnxiv.view.ThrottledNodeVirtualizer;
 import io.github.vqnxiv.view.VirtualizerRegion;
 import javafx.application.Application;
