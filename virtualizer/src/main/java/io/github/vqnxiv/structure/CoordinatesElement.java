@@ -53,6 +53,15 @@ public class CoordinatesElement<E> {
         this.y = y;
     }
 
+    /**
+     * Copy constructor.
+     * 
+     * @param c The coordinates element to copy.
+     */
+    public CoordinatesElement(CoordinatesElement<E> c) {
+        this(c.getElement(), c.getX(), c.y);
+    }
+
 
     /**
      * Whether this element is within the given area.
@@ -123,6 +132,36 @@ public class CoordinatesElement<E> {
     public void setY(double y) {
         this.y = y;
     }
+    
+    /**
+     * Setter for both coordinates.
+     *
+     * @param x New x coordinate.
+     * @param y New y coordinate.
+     */
+    public void setXY(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+    
+    /**
+     * Getter for both coordinates.
+     * 
+     * @return Point2D of both coordinates.
+     */
+    public Point2D getXY() {
+        return new Point2D(x, y);
+    }
+
+    /**
+     * Setter for both coordinates.
+     * 
+     * @param p New coordinates.
+     */
+    public void setXY(Point2D p) {
+        x = p.getX();
+        y = p.getY();
+    }
 
 
     @Override
@@ -145,6 +184,6 @@ public class CoordinatesElement<E> {
 
     @Override
     public String toString() {
-        return element.toString();
+        return "(" + x + ", " + y + ") " + element.toString();
     }
 }

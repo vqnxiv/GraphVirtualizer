@@ -24,30 +24,36 @@ class LayoutableMatrixTest {
     @Test
     void canRepositionNormally() {
         var itr = matrix.iterator();
-        System.out.println(matrix);
+        // System.out.println(matrix);
         
         // only getting some elements
         var p = itr.next();
         var p2 = itr.next();
         
         matrix.repositionTo(p, new Point2D(500, 500));
-        System.out.println(matrix);
+        // System.out.println(matrix);
+        assertTrue(p.getX() == 500d && p.getY() == 500d);
+        
         matrix.repositionTo(p2, new Point2D(1_100, 1_100));
-        System.out.println(matrix);
+        // System.out.println(matrix);
+        assertTrue(p2.getX() == 1_100 && p2.getY() == 1_100);
+        
         matrix.repositionTo(p, new Point2D(500, 5_000));
-        System.out.println(matrix);
+        // System.out.println(matrix);
+        assertTrue(p.getX() == 500 && p.getY() == 5_000);
+        
         matrix.repositionTo(p, new Point2D(5_000, 5_000));
-        System.out.println(matrix);
-        System.out.println(matrix.maximumWidth().get() + " " + matrix.maximumHeight().get());
+        // System.out.println(matrix);
+        assertTrue(p.getX() == 5_000 && p.getY() == 5_000);
     }
     
     @Test
     void canRepositionThroughItr() {
         var itr = matrix.iterator();
-        System.out.println(matrix);
+        // System.out.println(matrix);
         itr.next();
         assertDoesNotThrow(() -> itr.reposition(500d, 500d));
-        System.out.println(matrix);
+        // System.out.println(matrix);
         assertDoesNotThrow(itr::next);
     }
     
@@ -66,11 +72,9 @@ class LayoutableMatrixTest {
         int i = 0;
         for(var e : matrix) {
             l2.add(e.getElement());
-            if(i++ == 5) {
-                break;
-            }
         }
-
+    
+        assertEquals(l.size(), l2.size());
         assertTrue(l.containsAll(l2));
         assertTrue(l2.containsAll(l));
     }

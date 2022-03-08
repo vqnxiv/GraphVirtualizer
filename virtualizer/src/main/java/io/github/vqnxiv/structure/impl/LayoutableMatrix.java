@@ -1,12 +1,15 @@
 package io.github.vqnxiv.structure.impl;
 
 
+import io.github.vqnxiv.layout.Layout;
 import io.github.vqnxiv.structure.CoordinatesElement;
 import io.github.vqnxiv.structure.CoordinatesIterator;
+import io.github.vqnxiv.structure.CoordinatesStructure;
 import io.github.vqnxiv.structure.LayoutableStructure;
 import javafx.geometry.Point2D;
 
 import java.util.*;
+import java.util.function.Function;
 
 
 /**
@@ -15,43 +18,38 @@ import java.util.*;
  * @param <E> Type of elements.
  */
 public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements LayoutableStructure<E> {
-
+    
 
     /**
      * Constructor.
      *
-     * @param el Elements.
+     * @param el
      */
     public LayoutableMatrix(Collection<E> el) {
         super(el);
     }
 
-    /**
-     * Constructor.
-     *
-     * @param el            Elements.
-     * @param initialWidth  Width.
-     * @param initialHeight Height.
-     */
-    public LayoutableMatrix(Collection<E> el, double initialWidth, double initialHeight) {
-        super(el, initialWidth, initialHeight);
+    public LayoutableMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier) {
+        super(el);
+        layoutSupplier.apply(this).apply();
     }
 
     /**
-     * Constructor.
+     * Elements copy constructor.
      *
-     * @param el               Elements.
-     * @param initialWidth     Width.
-     * @param initialHeight    Height.
-     * @param initialRowNumber Row number.
-     * @param initialColNumber Column number.
+     * @param c Structure to copy.
      */
-    public LayoutableMatrix(Collection<E> el, double initialWidth, double initialHeight, 
-                            int initialRowNumber, int initialColNumber) {
-        super(
-            el, initialWidth, initialHeight, 
-            initialRowNumber, initialColNumber
-        );
+    public LayoutableMatrix(CoordinatesStructure<E> c) {
+        super(c);
+    }
+
+    /**
+     * Copy constructor.
+     *
+     * @param m Matrix to copy.
+     */
+    public LayoutableMatrix(CoordinatesMatrix<E> m) {
+        super(m);
     }
 
     /**
@@ -64,14 +62,20 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
      * @param initialColNumber    Column number.
      * @param maxRowRangeIncrease Maximum row range increase.
      * @param maxColRangeIncrease Maximum column range increase.
+     * @param maxRowNumber        Maximum rows.
+     * @param maxColNumber        Maximum columns.
      */
-    public LayoutableMatrix(Collection<E> el, double initialWidth, double initialHeight, 
-                            int initialRowNumber, int initialColNumber, 
-                            float maxRowRangeIncrease, float maxColRangeIncrease) {
+    public LayoutableMatrix(Collection<E> el,
+                            double initialWidth, double initialHeight,
+                            int initialRowNumber, int initialColNumber,
+                            float maxRowRangeIncrease, float maxColRangeIncrease,
+                            int maxRowNumber, int maxColNumber) {
         super(
-            el, initialWidth, initialHeight, 
-            initialRowNumber, initialColNumber, 
-            maxRowRangeIncrease, maxColRangeIncrease
+            el,
+            initialWidth, initialHeight,
+            initialRowNumber, initialColNumber,
+            maxRowRangeIncrease, maxColRangeIncrease,
+            maxRowNumber, maxColNumber
         );
     }
 
@@ -88,18 +92,81 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
      * @param maxRowNumber        Maximum rows.
      * @param maxColNumber        Maximum columns.
      */
-    public LayoutableMatrix(Collection<E> el, double initialWidth, double initialHeight, 
+    public LayoutableMatrix(CoordinatesStructure<E> el,
+                            double initialWidth, double initialHeight,
+                            int initialRowNumber, int initialColNumber,
+                            float maxRowRangeIncrease, float maxColRangeIncrease,
+                            int maxRowNumber, int maxColNumber) {
+        super(
+            el,
+            initialWidth, initialHeight,
+            initialRowNumber, initialColNumber,
+            maxRowRangeIncrease, maxColRangeIncrease,
+            maxRowNumber, maxColNumber
+        );
+    }
+    
+    /**
+     * Constructor.
+     *
+     * @param el                  Elements.
+     * @param layoutSupplier      Initial layout.
+     * @param initialWidth        Width.
+     * @param initialHeight       Height.
+     * @param initialRowNumber    Row number.
+     * @param initialColNumber    Column number.
+     * @param maxRowRangeIncrease Maximum row range increase.
+     * @param maxColRangeIncrease Maximum column range increase.
+     * @param maxRowNumber        Maximum rows.
+     * @param maxColNumber        Maximum columns.
+     */
+    public LayoutableMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier, 
+                            double initialWidth, double initialHeight, 
                             int initialRowNumber, int initialColNumber, 
                             float maxRowRangeIncrease, float maxColRangeIncrease, 
                             int maxRowNumber, int maxColNumber) {
         super(
-            el, initialWidth, initialHeight, 
+            el,
+            initialWidth, initialHeight, 
             initialRowNumber, initialColNumber, 
             maxRowRangeIncrease, maxColRangeIncrease, 
             maxRowNumber, maxColNumber
         );
+
+        layoutSupplier.apply(this).apply();
     }
 
+    /**
+     * Constructor.
+     *
+     * @param el                  Elements.
+     * @param layoutSupplier      Initial layout.
+     * @param initialWidth        Width.
+     * @param initialHeight       Height.
+     * @param initialRowNumber    Row number.
+     * @param initialColNumber    Column number.
+     * @param maxRowRangeIncrease Maximum row range increase.
+     * @param maxColRangeIncrease Maximum column range increase.
+     * @param maxRowNumber        Maximum rows.
+     * @param maxColNumber        Maximum columns.
+     */
+    public LayoutableMatrix(CoordinatesStructure<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier, 
+                            double initialWidth, double initialHeight, 
+                            int initialRowNumber, int initialColNumber, 
+                            float maxRowRangeIncrease, float maxColRangeIncrease, 
+                            int maxRowNumber, int maxColNumber) {
+        super(
+            el,
+            initialWidth, initialHeight, 
+            initialRowNumber, initialColNumber, 
+            maxRowRangeIncrease, maxColRangeIncrease, 
+            maxRowNumber, maxColNumber
+        );
+        
+        layoutSupplier.apply(this).apply();
+    }
+
+    
     /**
      * Reposition one element to the given coordinates.
      *
@@ -132,7 +199,7 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
     @Override
     public void repositionAllTo(Map<CoordinatesElement<E>, Point2D> m) {
         List<CoordinatesElement<E>> changed = new ArrayList<>(m.size());
-
+        
         for(var e : m.entrySet()) {
             if(move(e.getKey(), e.getValue())) {
                 var p = e.getKey();
@@ -154,8 +221,11 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
     public CoordinatesIterator<CoordinatesElement<E>> iterator() {
         return new LayoutableIterator();
     }
-    
-    
+
+
+    /**
+     * Iterator extension which allows the reposition of elements.
+     */
     protected class LayoutableIterator extends MatrixIterator {
 
         /**

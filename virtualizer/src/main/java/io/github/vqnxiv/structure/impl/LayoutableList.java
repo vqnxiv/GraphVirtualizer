@@ -1,12 +1,15 @@
 package io.github.vqnxiv.structure.impl;
 
 
+import io.github.vqnxiv.layout.Layout;
 import io.github.vqnxiv.structure.CoordinatesElement;
 import io.github.vqnxiv.structure.CoordinatesIterator;
+import io.github.vqnxiv.structure.CoordinatesStructure;
 import io.github.vqnxiv.structure.LayoutableStructure;
 import javafx.geometry.Point2D;
 
 import java.util.*;
+import java.util.function.Function;
 
 
 /**
@@ -29,6 +32,25 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
         super(el);
     }
 
+    /**
+     * Constructor with layout.
+     *
+     * @param el Elements.
+     * @param layoutSupplier Initial layout.
+     */
+    public LayoutableList(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier) {
+        super(el);
+        layoutSupplier.apply(this).apply();
+    }
+
+    /**
+     * Copy constructor.
+     *
+     * @param el Structure to copy.
+     */
+    public LayoutableList(CoordinatesStructure<E> el) {
+        super(el);
+    }
 
     /**
      * {@inheritDoc}
@@ -47,6 +69,12 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
         var e2 = elements.get(i);
         e2.setX(x);
         e2.setY(y);
+        if(x > maxWidth.get()) {
+            maxWidth.set(x);
+        }
+        if(y > maxHeight.get()) {
+            maxHeight.set(y);
+        }
     }
 
     /**
@@ -66,10 +94,13 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
      * @param m Elements with their old coordinates mapped to
      *          their new coordinates.
      */
+    // extremely slow because needs to check whether the element is in the list
     @Override
     public void repositionAllTo(Map<CoordinatesElement<E>, Point2D> m) {
         List<CoordinatesElement<E>> changed = new ArrayList<>(m.size());
-        
+
+        double maxx = 0;
+        double maxy = 0;
         for(var e : m.entrySet()) {
             int i = elements.indexOf(e.getKey());
             if(i < 0) {
@@ -77,9 +108,18 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
             }
             
             var e2 = elements.get(i);
+            maxx = Math.max(maxx, e.getValue().getX());
+            maxy = Math.max(maxy, e.getValue().getY());
             e2.setX(e.getValue().getX());
             e2.setY(e.getValue().getY());
             changed.add(e2);
+        }
+        
+        if(maxx > maxWidth.get()) {
+            maxWidth.set(maxx);
+        }
+        if(maxy > maxHeight.get()) {
+            maxHeight.set(maxy);
         }
     }
 

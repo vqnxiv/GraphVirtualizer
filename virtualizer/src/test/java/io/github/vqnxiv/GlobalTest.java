@@ -1,6 +1,7 @@
 package io.github.vqnxiv;
 
 
+import io.github.vqnxiv.layout.RandomLayout;
 import io.github.vqnxiv.node.TimedNodePool;
 import io.github.vqnxiv.structure.CoordinatesElement;
 import io.github.vqnxiv.node.DecoratedNode;
@@ -123,8 +124,8 @@ public class GlobalTest extends Application {
         
         int n = 1000;
         double z = 200_000d;
-        // var struct = new CoordinatesList<>(l);
-        var struct = new CoordinatesMatrix<>(l, z, z, n, n, 1.5f, 1.5f, n, n);
+        var struct = new CoordinatesList<>(l, s -> new RandomLayout<>(s, z, z));
+        // var struct = new CoordinatesMatrix<>(l, z, z, n, n, 1.5f, 1.5f, n, n);
         // var pool = new SetNodePool<>((CoordinatesElement<Thing> t) -> new DecoratedNodeLabel<>(t));
         var pool = new TimedNodePool<>(
             (CoordinatesElement<Thing> t) -> new DecoratedNodeLabel<>(t),
@@ -144,6 +145,8 @@ public class GlobalTest extends Application {
         // AnchorPane.setBottomAnchor(vr, 0d);
         // AnchorPane.setLeftAnchor(vr, 0d);
         // AnchorPane.setRightAnchor(vr, 0d);
+
+        System.out.println(nv.getTotalWidth() + " " + nv.getTotalHeight());
         
         stage.setScene(new Scene(pane));
         stage.show();

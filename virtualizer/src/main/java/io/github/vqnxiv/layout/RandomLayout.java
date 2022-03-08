@@ -75,7 +75,7 @@ public class RandomLayout<E> extends AbstractConstrainedLayout<E> {
 
             m.put(e, new Point2D(x, y));
         }
-        
+
         maxUsedWidth.set(maxW);
         maxUsedHeight.set(maxH);
         structure.repositionAllTo(m);

@@ -1,17 +1,19 @@
 package io.github.vqnxiv.structure.impl;
 
 
+import io.github.vqnxiv.layout.Layout;
 import io.github.vqnxiv.structure.CoordinatesElement;
 import io.github.vqnxiv.structure.CoordinatesIterator;
 import io.github.vqnxiv.structure.CoordinatesStructure;
+import io.github.vqnxiv.structure.LayoutableStructure;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Point2D;
 
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 
 /**
@@ -34,12 +36,12 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
     /**
      * Maximum height in this structure.
      */
-    private final DoubleProperty maxHeight = new SimpleDoubleProperty();
+    protected final DoubleProperty maxHeight = new SimpleDoubleProperty();
 
     /**
      * Maximum width in this structure.
      */
-    private final DoubleProperty maxWidth = new SimpleDoubleProperty();
+    protected final DoubleProperty maxWidth = new SimpleDoubleProperty();
 
     
     /**
@@ -50,15 +52,37 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
     public CoordinatesList(Collection<E> el) {
         elements = new ArrayList<>();
         
-        // testing purposes only
-        maxWidth.set(200_000d);
-        maxHeight.set(200_000d);
-        
         for(E e : el) {
-            double x = ThreadLocalRandom.current().nextDouble(200_000d);
-            double y = ThreadLocalRandom.current().nextDouble(200_000d);
-            elements.add(new CoordinatesElement<>(e, x, y));
+            elements.add(new CoordinatesElement<>(e, 0, 0));
         }
+    }
+    
+    /**
+     * Constructor with layout.
+     * 
+     * @param el Elements.
+     * @param layoutSupplier Initial layout.
+     */
+    public CoordinatesList(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier) {
+        this(new LayoutableList<>(el, layoutSupplier));
+    }
+
+    /**
+     * Copy constructor.
+     * 
+     * @param el Structure to copy.
+     */
+    // keep this even if structure extends collection
+    // as this one allows to keep coordinates information
+    // and not just the elements
+    public CoordinatesList(CoordinatesStructure<E> el) {
+        // just copy the list maybe? > elements = el.elements;
+        elements = new ArrayList<>();
+        for(var e : el) {
+            elements.add(new CoordinatesElement<>(e));
+        }
+        maxWidth.set(el.maximumWidth().get());
+        maxHeight.set(el.maximumHeight().get());
     }
 
     
@@ -151,6 +175,11 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
         elements.forEach(action);
     }
 
+    @Override
+    public String toString() {
+        return elements.toString();
+    }
+    
 
     /**
      * Iterator for this class. Protected so that extension of

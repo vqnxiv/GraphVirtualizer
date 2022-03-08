@@ -1,16 +1,18 @@
 package io.github.vqnxiv.structure.impl;
 
 
+import io.github.vqnxiv.layout.RandomLayout;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 
-class MatrixIteratorTest {
+class CoordinatesMatrixTest {
     
     private record Pojo(String name) { }
     
@@ -24,7 +26,8 @@ class MatrixIteratorTest {
         for(var e : matrix) {
             l2.add(e.getElement());
         }
-        
+
+        assertEquals(l.size(), l2.size());
         assertTrue(l.containsAll(l2));
         assertTrue(l2.containsAll(l));
     }
@@ -40,6 +43,14 @@ class MatrixIteratorTest {
         
         assertFalse(itr.hasNext());
         assertThrows(NoSuchElementException.class, itr::next);
+    }
+
+    @Test
+    void initialLayout() {
+        matrix = new CoordinatesMatrix<>(l, RandomLayout::new);
+        for(var e : matrix) {
+            System.out.println(e);
+        }
     }
     
 }
