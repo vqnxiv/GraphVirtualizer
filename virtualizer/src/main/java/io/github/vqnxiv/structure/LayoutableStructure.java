@@ -5,6 +5,7 @@ import io.github.vqnxiv.structure.impl.LayoutableList;
 import javafx.geometry.Point2D;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 
 /**
@@ -42,4 +43,26 @@ public interface LayoutableStructure<E> extends CoordinatesStructure<E> {
      * their new coordinates.
      */
     void repositionAllTo(Map<CoordinatesElement<E>, Point2D> m);
+
+
+    /**
+     * The structure will perform the given action when one or more
+     * elements are repositioned. <br>
+     * The given action should avoid changing the structure.
+     * <p>
+     * Multiple actions can be given to a single structure, and a
+     * single action can be given to multiple structures.
+     *
+     * @param action The action to perform.
+     */
+    void addMoveListener(Consumer<? super StructureChange.Move<E>> action);
+
+    /**
+     * The structure will no longer perform the given action when one or more
+     * elements are repositioned. This requires giving the <u>exact same</u>
+     * consumer as the one that was passed to {@link #addMoveListener(Consumer)}.
+     * 
+     * @param action The action to stop doing.
+     */
+    void removeMoveListener(Consumer<? super StructureChange.Move<E>> action);
 }

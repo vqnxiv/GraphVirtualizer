@@ -1,9 +1,11 @@
 package io.github.vqnxiv.structure.impl;
 
+
 import io.github.vqnxiv.layout.RandomLayout;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+
 
 class CoordinatesListTest {
 

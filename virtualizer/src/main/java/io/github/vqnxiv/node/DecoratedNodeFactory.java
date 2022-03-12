@@ -18,6 +18,7 @@ package io.github.vqnxiv.node;
  * 
  * @param <D> The type of decorator.
  */
+// todo: remove and simply use suppliers instead?
 @FunctionalInterface
 public interface DecoratedNodeFactory<D> {
 

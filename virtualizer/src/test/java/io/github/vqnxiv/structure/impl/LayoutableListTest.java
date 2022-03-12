@@ -14,51 +14,43 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-class LayoutableMatrixTest {
+class LayoutableListTest {
     
     private record Pojo(String name) { }
-    
-    List<Pojo> l = List.of(new Pojo("one"), new Pojo("two"), new Pojo("three")); 
-    
-    LayoutableMatrix<Pojo> matrix = new LayoutableMatrix<>(l);
-    
+
+    List<Pojo> l = List.of(new Pojo("one"), new Pojo("two"), new Pojo("three"));
+
+    LayoutableList<Pojo> cList = new LayoutableList<Pojo>(l);
+
     
     @Test
     void canRepositionNormally() {
-        var itr = matrix.iterator();
-        // System.out.println(matrix);
-        
-        // only getting some elements
+        var itr = cList.iterator();
         var p = itr.next();
         var p2 = itr.next();
         
-        matrix.repositionTo(p, new Point2D(500, 500));
-        // System.out.println(matrix);
+        cList.repositionTo(p, new Point2D(500, 500));
         assertTrue(p.getX() == 500d && p.getY() == 500d);
         
-        matrix.repositionTo(p2, new Point2D(1_100, 1_100));
-        // System.out.println(matrix);
+        cList.repositionTo(p2, new Point2D(1_100, 1_100));
         assertTrue(p2.getX() == 1_100 && p2.getY() == 1_100);
         
-        matrix.repositionTo(p, new Point2D(500, 5_000));
-        // System.out.println(matrix);
+        cList.repositionTo(p, new Point2D(500, 5_000));
         assertTrue(p.getX() == 500 && p.getY() == 5_000);
         
-        matrix.repositionTo(p, new Point2D(5_000, 5_000));
-        // System.out.println(matrix);
+        cList.repositionTo(p, new Point2D(5_000, 5_000));
         assertTrue(p.getX() == 5_000 && p.getY() == 5_000);
     }
     
     @Test
     void repositionMultiple() {
-        var itr = matrix.iterator();
+        var itr = cList.iterator();
         var p = itr.next();
         var p2 = itr.next();
         
-        matrix.repositionAllTo(
+        cList.repositionAllTo(
             Map.of(p, new Point2D(500, 500), p2, new Point2D(1_100, 1_100))
         );
 
@@ -69,28 +61,26 @@ class LayoutableMatrixTest {
     
     @Test
     void canRepositionThroughItr() {
-        var itr = matrix.iterator();
-        // System.out.println(matrix);
+        var itr = cList.iterator();
         itr.next();
         assertDoesNotThrow(() -> itr.reposition(500d, 500d));
-        // System.out.println(matrix);
         assertDoesNotThrow(itr::next);
     }
     
     @Test
     void normalRepositionMakesItrThrow() {
-        var itr = matrix.iterator();
+        var itr = cList.iterator();
         
         var p = itr.next();
-        matrix.repositionTo(p, 500d, 500d);
+        cList.repositionTo(p, 500d, 500d);
         assertThrows(ConcurrentModificationException.class, itr::next);
     }
 
     @Test
     void iteratorGetsAllElementsAndEnds() {
         var l2 = new ArrayList<Pojo>();
-
-        for(var e : matrix) {
+        int i = 0;
+        for(var e : cList) {
             l2.add(e.getElement());
         }
     
@@ -98,20 +88,20 @@ class LayoutableMatrixTest {
         assertTrue(l.containsAll(l2));
         assertTrue(l2.containsAll(l));
     }
-
-    @Test
+    
+        @Test
     void moveListenerTest() {
         AtomicReference<StructureChange.Move<?>> cRef = new AtomicReference<>();
-        matrix.addMoveListener(cRef::set);
+        cList.addMoveListener(cRef::set);
 
-        var itr = matrix.iterator();
+        var itr = cList.iterator();
         var p = itr.next();
         var cp = new CoordinatesElement<>(p);
         var dst = new Point2D(673d, 2d);
-        matrix.repositionTo(p, dst);
+        cList.repositionTo(p, dst);
         
         var m = cRef.get();
-        assertEquals(matrix, m.structure());
+        assertEquals(cList, m.structure());
         assertEquals(1, m.elements().size());
         assertTrue(m.elements().containsKey(cp));
         assertEquals(dst, m.elements().get(cp));
@@ -124,16 +114,16 @@ class LayoutableMatrixTest {
         AtomicReference<StructureChange.Move<?>> cRef = new AtomicReference<>(null);
         Consumer<StructureChange.Move<?>> csmr = cRef::set;
         
-        matrix.addMoveListener(csmr);
+        cList.addMoveListener(csmr);
 
-        var itr = matrix.iterator();
+        var itr = cList.iterator();
         var p = itr.next();
-        matrix.repositionTo(p, 100d, 100d);
+        cList.repositionTo(p, 100d, 100d);
         
         assertNotNull(cRef.get());
-        matrix.removeMoveListener(csmr);
+        cList.removeMoveListener(csmr);
         cRef.set(null);
-        matrix.repositionTo(p, 200d, 200d);
+        cList.repositionTo(p, 200d, 200d);
         assertNull(cRef.get());
     }
 }

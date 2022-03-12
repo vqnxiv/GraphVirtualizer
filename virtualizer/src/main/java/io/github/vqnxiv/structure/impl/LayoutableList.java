@@ -2,13 +2,11 @@ package io.github.vqnxiv.structure.impl;
 
 
 import io.github.vqnxiv.layout.Layout;
-import io.github.vqnxiv.structure.CoordinatesElement;
-import io.github.vqnxiv.structure.CoordinatesIterator;
-import io.github.vqnxiv.structure.CoordinatesStructure;
-import io.github.vqnxiv.structure.LayoutableStructure;
+import io.github.vqnxiv.structure.*;
 import javafx.geometry.Point2D;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 
@@ -21,6 +19,17 @@ import java.util.function.Function;
  * @see LayoutableStructure
  */
 public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableStructure<E> {
+
+    
+    /**
+     * On event consumers. 
+     */
+    private final List<Consumer<? super StructureChange.Move<E>>> consumers = new ArrayList<>();
+
+    /**
+     * Modification counter for iterator concurrent modification.
+     */
+    private int modCount = 0;
     
     
     /**
@@ -61,11 +70,14 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
      */
     @Override
     public void repositionTo(CoordinatesElement<E> e, double x, double y) {
+        // < 0 check?
+        
         int i = elements.indexOf(e);
         if(i < 0) {
             return;
         }
-        
+
+        var cp = new CoordinatesElement<>(e);
         var e2 = elements.get(i);
         e2.setX(x);
         e2.setY(y);
@@ -75,6 +87,11 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
         if(y > maxHeight.get()) {
             maxHeight.set(y);
         }
+        
+        var pTL = new Point2D(Math.min(cp.getX(), x), Math.min(cp.getY(), y));
+        var pBR = new Point2D(Math.max(cp.getX(), x), Math.max(cp.getY(), y));
+        modCount++;
+        fireEvent(Map.of(cp, e2.getXY()), pTL, pBR);
     }
 
     /**
@@ -97,10 +114,18 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
     // extremely slow because needs to check whether the element is in the list
     @Override
     public void repositionAllTo(Map<CoordinatesElement<E>, Point2D> m) {
-        List<CoordinatesElement<E>> changed = new ArrayList<>(m.size());
+        Map<CoordinatesElement<E>, Point2D> changed = new HashMap<>(m.size());
 
+        // area which contains the changes
+        double minChangedX = maxWidth.get();
+        double minChangedY = maxHeight.get();
+        double maxChangedX = 0d;
+        double maxChangedY = 0d;
+            
+        // new possible max dimensions
         double maxx = 0;
         double maxy = 0;
+        
         for(var e : m.entrySet()) {
             int i = elements.indexOf(e.getKey());
             if(i < 0) {
@@ -110,9 +135,27 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
             var e2 = elements.get(i);
             maxx = Math.max(maxx, e.getValue().getX());
             maxy = Math.max(maxy, e.getValue().getY());
+
+            // checks old coordinates
+            minChangedX = Math.min(minChangedX, e2.getX());
+            minChangedY = Math.min(minChangedY, e2.getY());
+            maxChangedX = Math.max(maxChangedX, e2.getX());
+            maxChangedY = Math.max(maxChangedY, e2.getY());
+            
             e2.setX(e.getValue().getX());
             e2.setY(e.getValue().getY());
-            changed.add(e2);
+
+            // checks new coordinates
+            minChangedX = Math.min(minChangedX, e2.getX());
+            minChangedY = Math.min(minChangedY, e2.getY());
+            maxChangedX = Math.max(maxChangedX, e2.getX());
+            maxChangedY = Math.max(maxChangedY, e2.getY());
+            
+            changed.put(e.getKey(), e2.getXY());
+        }
+        
+        if(changed.isEmpty()) {
+            return;
         }
         
         if(maxx > maxWidth.get()) {
@@ -121,6 +164,39 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
         if(maxy > maxHeight.get()) {
             maxHeight.set(maxy);
         }
+        
+        modCount++;
+        fireEvent(changed, new Point2D(minChangedX, minChangedY), new Point2D(maxChangedX, maxChangedY));
+    }
+
+    /**
+     * Notifies all the consumers.
+     */
+    protected void fireEvent(Map<CoordinatesElement<E>, Point2D> m, Point2D topLeft, Point2D bottomRight) {
+        var e = StructureChange.moved(this, m, topLeft, bottomRight);
+        for(var c : consumers) {
+            c.accept(e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param action The action to perform.
+     */
+    @Override
+    public void addMoveListener(Consumer<? super StructureChange.Move<E>> action) {
+        consumers.add(action);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param action The action to stop doing.
+     */
+    @Override
+    public void removeMoveListener(Consumer<? super StructureChange.Move<E>> action) {
+        consumers.remove(action);
     }
 
     /**
@@ -145,11 +221,18 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
          */
         private CoordinatesElement<E> lastElt;
 
+        /**
+         * Expected modification count.
+         */
+        private final int expectedModCount;
+
 
         /**
          * Constructor.
          */
-        protected LayoutableIterator() { }
+        protected LayoutableIterator() { 
+            expectedModCount = modCount;
+        }
         
         
         /**
@@ -171,6 +254,12 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
          */
         @Override
         public CoordinatesElement<E> next() {
+            // the underlying list itself isn't changed
+            // so it could be done, but that way it's
+            // consistent w/ matrix + potentially other structures?
+            if(expectedModCount != modCount) {
+                throw new ConcurrentModificationException();
+            }
             lastElt = super.next();
             return lastElt;
         }
@@ -184,6 +273,7 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
         @Override
         public void reposition(double x, double y) {
             repositionTo(lastElt, x, y);
+            modCount--; // blergh
         }
 
         /**
@@ -194,6 +284,7 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
         @Override
         public void reposition(Point2D p) {
             repositionTo(lastElt, p);
+            modCount--;
         }
     }
 }

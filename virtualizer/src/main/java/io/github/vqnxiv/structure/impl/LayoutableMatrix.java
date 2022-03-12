@@ -2,13 +2,11 @@ package io.github.vqnxiv.structure.impl;
 
 
 import io.github.vqnxiv.layout.Layout;
-import io.github.vqnxiv.structure.CoordinatesElement;
-import io.github.vqnxiv.structure.CoordinatesIterator;
-import io.github.vqnxiv.structure.CoordinatesStructure;
-import io.github.vqnxiv.structure.LayoutableStructure;
+import io.github.vqnxiv.structure.*;
 import javafx.geometry.Point2D;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 
@@ -18,12 +16,18 @@ import java.util.function.Function;
  * @param <E> Type of elements.
  */
 public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements LayoutableStructure<E> {
+
+
+    /**
+     * On event consumers. 
+     */
+    private final List<Consumer<? super StructureChange.Move<E>>> consumers = new ArrayList<>();
     
 
     /**
      * Constructor.
      *
-     * @param el
+     * @param el Elements.
      */
     public LayoutableMatrix(Collection<E> el) {
         super(el);
@@ -176,7 +180,7 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
      */
     @Override
     public void repositionTo(CoordinatesElement<E> e, double x, double y) {
-        move(e, x, y);
+        repositionTo(e, new Point2D(x, y));
     }
 
     /**
@@ -187,7 +191,14 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
      */
     @Override
     public void repositionTo(CoordinatesElement<E> e, Point2D p) {
-        move(e, p);
+        var cp = new CoordinatesElement<>(e);
+        if(!move(e, p)) {
+            return;
+        }
+
+        var pTL = new Point2D(Math.min(cp.getX(), p.getX()), Math.min(cp.getY(), p.getX()));
+        var pBR = new Point2D(Math.max(cp.getX(), p.getX()), Math.max(cp.getY(), p.getY()));
+        fireEvent(Map.of(cp, p), pTL, pBR);
     }
 
     /**
@@ -198,17 +209,68 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
      */
     @Override
     public void repositionAllTo(Map<CoordinatesElement<E>, Point2D> m) {
-        List<CoordinatesElement<E>> changed = new ArrayList<>(m.size());
+        Map<CoordinatesElement<E>, Point2D> changed = new HashMap<>(m.size());
+        
+        double minChangedX = maximumWidth().get();
+        double minChangedY = maximumHeight().get();
+        double maxChangedX = 0d;
+        double maxChangedY = 0d;
+        CoordinatesElement<E> cp;
         
         for(var e : m.entrySet()) {
+            cp = new CoordinatesElement<>(e.getKey());
             if(move(e.getKey(), e.getValue())) {
-                var p = e.getKey();
-                // not needed
-                p.setX(e.getValue().getX());
-                p.setY(e.getValue().getY());
-                changed.add(p);
+
+                minChangedX = Math.min(minChangedX, cp.getX());
+                minChangedY = Math.min(minChangedY, cp.getY());
+                maxChangedX = Math.max(maxChangedX, cp.getX());
+                maxChangedY = Math.max(maxChangedY, cp.getY());
+                
+                changed.put(cp, e.getValue());
+
+                minChangedX = Math.min(minChangedX, e.getValue().getX());
+                minChangedY = Math.min(minChangedY, e.getValue().getY());
+                maxChangedX = Math.max(maxChangedX, e.getValue().getX());
+                maxChangedY = Math.max(maxChangedY, e.getValue().getY());
             }
         }
+
+        if(changed.isEmpty()) {
+            return;
+        }
+        
+        fireEvent(changed, new Point2D(minChangedX, minChangedY), new Point2D(maxChangedX, maxChangedY));
+    }
+
+    /**
+     * Notifies all the consumers.
+     */
+    protected void fireEvent(Map<CoordinatesElement<E>, Point2D> m, Point2D topLeft, Point2D bottomRight) {
+        var e = StructureChange.moved(this, m, topLeft, bottomRight);
+        for(var c : consumers) {
+            c.accept(e);
+        }
+    }
+    
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param action The action to perform.
+     */
+    @Override
+    public void addMoveListener(Consumer<? super StructureChange.Move<E>> action) {
+        consumers.add(action);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param action The action to stop doing.
+     */
+    @Override
+    public void removeMoveListener(Consumer<? super StructureChange.Move<E>> action) {
+        consumers.remove(action);
     }
 
 

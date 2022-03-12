@@ -23,6 +23,8 @@ import java.util.Collection;
 // ==> extends Collection<E>, Collection<CoordinatesElement<E>>
 // potential erasure clash? (removeAll, retainAll, containsAll, addAll)
 // iterator() clash + other signatures too? spliterator, stream, toArray, etc
+    
+// tbf i think no collection is the way to go? too many name clashes so idk
 public interface CoordinatesStructure<E> extends CoordinatesIterable<CoordinatesElement<E>> {
 
     
