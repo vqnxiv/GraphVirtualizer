@@ -12,7 +12,6 @@ import java.util.Optional;
  * @param <D> Type of decorators.
  *
  * @see DecoratedNode
- * @see DecoratedNodeFactory
  * @see SetNodePool
  * @see TimedNodePool
  */

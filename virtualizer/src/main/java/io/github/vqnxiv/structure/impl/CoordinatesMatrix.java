@@ -12,6 +12,7 @@ import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 
 /**
@@ -119,11 +120,6 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     /**
      * Current row range.
      */
-    // main reason for using rowRange and colRange is that
-    // maxHeight and maxWidth may become desynced due to
-    // bindings
-    // solution => ReadOnly getters and update on reposition()
-    // and place() and constructors if greater than current value
     private int rowRange;
 
     /**
@@ -164,7 +160,12 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     /**
      * Concurrent modification checker for {@link MatrixIterator}. 
      */
-    private int modCount = 0;
+    private int modCount;
+
+    /**
+     * Number of elements.
+     */
+    private int size;
     
 
     /**
@@ -271,6 +272,8 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         for(E e : el) {
             elements[0][0].add(new CoordinatesElement<>(e, 0, 0));
         }
+        
+        size = el.size();
     }
 
     /**
@@ -302,6 +305,8 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         for(var e : el) {
             place(e);
         }
+
+        size = el.size();
     }
     
     /**
@@ -411,17 +416,6 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         int i = (int) (x / maxWidth.get() * elements.length);
         int j = (int) (y / maxHeight.get() * elements[0].length);
         return new Point2D(i, j);
-    }
-
-    /**
-     * Helper method which checks whether {@link #elements}
-     * contains the given element.
-     * 
-     * @param c The element to check.
-     * @return {@code true} if it contains it; {@code false} otherwise.
-     */
-    protected boolean contains(CoordinatesElement<E> c) {
-        return getListAt(indexesOf(c)).contains(c);
     }
 
     /**
@@ -655,17 +649,46 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         
         return l;
     }
-    
+
     /**
      * {@inheritDoc}
      *
-     * @param topLeft     Top left corner.
-     * @param bottomRight Bottom right corner.
+     * @param topLeftX     Top left corner X coordinate.
+     * @param topLeftY     Top left corner Y coordinate.
+     * @param bottomRightX Bottom right corner X coordinate.
+     * @param bottomRightY Bottom right corner Y coordinate.
+     * @param condition    Filtering condition.
      * @return Collection of all elements within the area.
      */
     @Override
-    public Collection<CoordinatesElement<E>> between(Point2D topLeft, Point2D bottomRight) {
-        return between(topLeft.getX(), topLeft.getY(), bottomRight.getX(), bottomRight.getY());
+    public Collection<CoordinatesElement<E>> between(double topLeftX, double topLeftY, 
+                                                     double bottomRightX, double bottomRightY, 
+                                                     Predicate<E> condition) {
+        List<CoordinatesElement<E>> l = new ArrayList<>();
+
+        if(topLeftX >= bottomRightX || topLeftY >= bottomRightY
+            || topLeftX >= maxWidth.get() || topLeftY >= maxHeight.get()
+            || bottomRightX <= 0 || bottomRightY <= 0) {
+            return l;
+        }
+
+        int minI = Math.max((int) (topLeftX / maxWidth.get() * elements.length), 0);
+        int minJ = Math.max((int) (topLeftY / maxHeight.get() * elements[0].length), 0);
+
+        int maxI = Math.min((int) (bottomRightX / maxWidth.get() * elements.length), elements.length);
+        int maxJ = Math.min((int) (bottomRightY / maxHeight.get() * elements[0].length), elements[0].length);
+
+        for(int i = minI; i < maxI+1; i++) {
+            for(int j = minJ; j < maxJ+1; j++) {
+                for(var e : elements[i][j]) {
+                    if(e.isIn(topLeftX, topLeftY, bottomRightX, bottomRightY) && condition.test(e.getElement())) {
+                        l.add(e);
+                    }
+                }
+            }
+        }
+
+        return l;
     }
 
     /**
@@ -687,7 +710,65 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     public ReadOnlyDoubleProperty maximumWidth() {
         return maxWidth;
     }
-    
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return The number of elements in this structure.
+     */
+    @Override
+    public int size() {
+        return size;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param c The element to check.
+     * @return {@code true} if it contains it; {@code false} otherwise.
+     */
+    @Override
+    public boolean contains(CoordinatesElement<E> c) {
+        return getListAt(indexesOf(c)).contains(c);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param element The element to find.
+     * @return The coordinates of the given element if it is in the structure.
+     */
+    @Override
+    public Optional<CoordinatesElement<E>> coordinatesOf(E element) {
+        for(var c : this) {
+            if(c.getElement().equals(element)) {
+                return Optional.of(c);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param elements The elements to find.
+     * @return The coordinates of the given elements that are in the structure.
+     */
+    @Override
+    public Map<E, CoordinatesElement<E>> coordinatesOf(Collection<E> elements) {
+        var m = new HashMap<E, CoordinatesElement<E>>();
+
+        for(var e : elements) {
+            coordinatesOf(e).ifPresent(
+                c -> m.put(e, c)
+            );
+        }
+
+        return m;
+    }
+
+
     /**
      * {@inheritDoc}
      *
@@ -713,17 +794,16 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
 
     @Override
     public String toString() {
-        // return Arrays.deepToString(elements);
         StringBuilder sb = new StringBuilder();
         for(var e : elements) {
-            sb.append(Arrays.toString(e) + '\n');
+            sb.append(Arrays.toString(e)).append('\n');
         }
         return sb.toString();
     }
 
     
     /**
-     * 3D iterator over {@link #elements}.
+     * 3D internalItr over {@link #elements}.
      */
     protected class MatrixIterator implements CoordinatesIterator<CoordinatesElement<E>> {
 
@@ -831,9 +911,9 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         }
 
         /**
-         * Whether this iterator has reached the end of the matrix.
+         * Whether this internalItr has reached the end of the matrix.
          * 
-         * @return Whether this iterator has reached the end of the matrix.
+         * @return Whether this internalItr has reached the end of the matrix.
          */
         protected boolean hasReachedTheEnd() {
             return reachedTheEnd;

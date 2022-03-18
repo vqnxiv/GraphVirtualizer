@@ -102,7 +102,7 @@ class LayoutableMatrixTest {
     @Test
     void moveListenerTest() {
         AtomicReference<StructureChange.Move<?>> cRef = new AtomicReference<>();
-        matrix.addMoveListener(cRef::set);
+        matrix.addMoveListener(this, cRef::set);
 
         var itr = matrix.iterator();
         var p = itr.next();
@@ -124,14 +124,14 @@ class LayoutableMatrixTest {
         AtomicReference<StructureChange.Move<?>> cRef = new AtomicReference<>(null);
         Consumer<StructureChange.Move<?>> csmr = cRef::set;
         
-        matrix.addMoveListener(csmr);
+        matrix.addMoveListener(this, csmr);
 
         var itr = matrix.iterator();
         var p = itr.next();
         matrix.repositionTo(p, 100d, 100d);
         
         assertNotNull(cRef.get());
-        matrix.removeMoveListener(csmr);
+        matrix.removeMoveListener(this, csmr);
         cRef.set(null);
         matrix.repositionTo(p, 200d, 200d);
         assertNull(cRef.get());

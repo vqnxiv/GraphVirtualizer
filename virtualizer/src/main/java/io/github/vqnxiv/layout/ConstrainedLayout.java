@@ -28,7 +28,11 @@ public interface ConstrainedLayout<E> extends Layout<E> {
      * @param maxWidth  Maximum allowed width.
      * @param maxHeight Maximum allowed height.
      */
-    void applyWithinBounds(double maxWidth, double maxHeight);
+    default void applyWithinBounds(double maxWidth, double maxHeight) {
+        maxAllowedWidth().set(maxWidth);
+        maxAllowedHeight().set(maxHeight);
+        apply();
+    }
     
     /**
      * Maximum allowed width offset when
@@ -36,14 +40,18 @@ public interface ConstrainedLayout<E> extends Layout<E> {
      * 
      * @return Maximum allowed width offset.
      */
-    double getMaxAllowedWidth();
+    default double getMaxAllowedWidth() {
+        return maxAllowedWidth().get();
+    }
 
     /**
      * Sets the maximum allowed width offset.
      * 
      * @param maxAllowedWidth New maximum allowed width offset.
      */
-    void setMaxAllowedWidth(double maxAllowedWidth);
+    default void setMaxAllowedWidth(double maxAllowedWidth) {
+        maxAllowedWidth().set(maxAllowedWidth);
+    }
 
     /**
      * Property of the maximum allowed width offset.
@@ -58,14 +66,18 @@ public interface ConstrainedLayout<E> extends Layout<E> {
      *
      * @return Maximum allowed height offset.
      */
-    double getMaxAllowedHeight();
+    default double getMaxAllowedHeight() {
+        return maxAllowedHeight().get();
+    }
 
     /**
      * Sets the maximum allowed height offset.
      * 
      * @param maxAllowedHeight New maximum allowed height offset.
      */
-    void setMaxAllowedHeight(double maxAllowedHeight);
+    default void setMaxAllowedHeight(double maxAllowedHeight) {
+        maxAllowedHeight().set(maxAllowedHeight);
+    }
 
     /**
      * Property of the maximum allowed height offset.

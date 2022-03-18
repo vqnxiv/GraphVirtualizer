@@ -2,6 +2,7 @@ package io.github.vqnxiv.node;
 
 
 import java.util.*;
+import java.util.function.Function;
 
 
 /**
@@ -11,7 +12,6 @@ import java.util.*;
  * @param <D> Type of decorator.
  *
  * @see DecoratedNode
- * @see DecoratedNodeFactory
  * @see TimedNodePool
  */
 public class SetNodePool<D> implements DecoratedNodePool<D> {
@@ -31,7 +31,7 @@ public class SetNodePool<D> implements DecoratedNodePool<D> {
     /**
      * Factory which creates instances of DecoratedNode.
      */
-    private final DecoratedNodeFactory<D> factory;
+    private final Function<D, DecoratedNode<D>> factory;
 
 
     /**
@@ -39,7 +39,7 @@ public class SetNodePool<D> implements DecoratedNodePool<D> {
      * 
      * @param factory Factory.
      */
-    public SetNodePool(DecoratedNodeFactory<D> factory) {
+    public SetNodePool(Function<D, DecoratedNode<D>> factory) {
         Objects.requireNonNull(factory);
         
         this.factory = factory;
@@ -63,7 +63,7 @@ public class SetNodePool<D> implements DecoratedNodePool<D> {
         DecoratedNode<D> ret;
         
         if(freeNodes.isEmpty()) {
-            ret = factory.createNode(d);
+            ret = factory.apply(d);
         }
         else {
             ret = freeNodes.poll();
@@ -118,7 +118,7 @@ public class SetNodePool<D> implements DecoratedNodePool<D> {
     }
 
     /**
-     * Clears the free nodes.
+     * {@inheritDoc}
      */
     @Override
     public void clear() {
@@ -126,7 +126,7 @@ public class SetNodePool<D> implements DecoratedNodePool<D> {
     }
 
     /**
-     * Returns tthe amount of available nodes in the pool.
+     * {@inheritDoc}
      *
      * @return Tthe amount of available nodes in the pool.
      */
@@ -136,7 +136,7 @@ public class SetNodePool<D> implements DecoratedNodePool<D> {
     }
 
     /**
-     * Returns the amount of available nodes in the pool.
+     * {@inheritDoc}
      *
      * @return The amount of available nodes in the pool.
      */

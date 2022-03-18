@@ -2,6 +2,7 @@ package io.github.vqnxiv.node;
 
 
 import java.util.*;
+import java.util.function.Function;
 
 
 /**
@@ -13,7 +14,6 @@ import java.util.*;
  * @param <D> Type of decorator.
  *
  * @see DecoratedNode
- * @see DecoratedNodeFactory
  * @see SetNodePool
  */
 public class TimedNodePool<D> implements DecoratedNodePool<D> {
@@ -124,7 +124,7 @@ public class TimedNodePool<D> implements DecoratedNodePool<D> {
     /**
      * Factory which creates instances of DecoratedNode.
      */
-    private final DecoratedNodeFactory<D> factory;
+    private final Function<D, DecoratedNode<D>> factory;
 
     /**
      * How long an used node should be kept.
@@ -159,7 +159,7 @@ public class TimedNodePool<D> implements DecoratedNodePool<D> {
      * 
      * @param factory DecoratedNode factory.
      */
-    public TimedNodePool(DecoratedNodeFactory<D> factory) {
+    public TimedNodePool(Function<D, DecoratedNode<D>> factory) {
         this(factory, DEFAULT_KEEP_ALIVE_TIME_MS, DEFAULT_CORE_SIZE);
     }
 
@@ -170,7 +170,7 @@ public class TimedNodePool<D> implements DecoratedNodePool<D> {
      * @param keepAlivetime Keep alive time.
      * @param coreSize      Core size.
      */
-    public TimedNodePool(DecoratedNodeFactory<D> factory, long keepAlivetime, int coreSize) {
+    public TimedNodePool(Function<D, DecoratedNode<D>> factory, long keepAlivetime, int coreSize) {
         Objects.requireNonNull(factory);
 
         this.factory = factory;
@@ -228,7 +228,7 @@ public class TimedNodePool<D> implements DecoratedNodePool<D> {
 
         if(freeNodes.isEmpty()) {
             now(false);
-            tdec = new TimestampedDecorated(factory.createNode(d), now);
+            tdec = new TimestampedDecorated(factory.apply(d), now);
         }
         else {
             tdec = freeNodes.pollLast();

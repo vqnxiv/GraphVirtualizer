@@ -45,6 +45,15 @@ public class NodeVirtualizer<E> extends AbstractVirtualizer {
      */
     protected final AnchorPane internal;
     
+    // Map<Structure<?>, Pool<?>>
+    // that way we can get multiple types 
+    // foreach structure, get elts, then request nodes from map[structure]
+    // then nodes set wildcard as well
+    // or Map<Structure<?>, Set<?>> ?
+    // how do w/ layouts though
+    // theyd need external communication?
+    // ^ solved tho
+    // important: draw priority
     /**
      * The elements to display.
      */

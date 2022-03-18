@@ -16,8 +16,7 @@ import java.util.Optional;
  * Shape filled with the color field, etc.
  * 
  * @param <D> The decorator type.
- *  
- * @see DecoratedNodeFactory
+ *
  * @see DecoratedNodePool
  */
 public interface DecoratedNode<D> {
@@ -52,7 +51,9 @@ public interface DecoratedNode<D> {
      * 
      * @return {@code true} if this node is decorated.
      */
-    boolean isDecorated();
+    default boolean isDecorated() {
+        return getDecorator().isPresent();
+    }
 
     /**
      * Clears the decorator.

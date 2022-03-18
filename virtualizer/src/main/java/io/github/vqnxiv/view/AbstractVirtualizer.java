@@ -4,7 +4,6 @@ package io.github.vqnxiv.view;
 import io.github.vqnxiv.misc.BoundedDoubleProperty;
 import javafx.beans.Observable;
 import javafx.beans.property.DoubleProperty;
-import javafx.geometry.Point2D;
 
 
 /**
@@ -153,26 +152,7 @@ public abstract class AbstractVirtualizer implements Virtualizer {
         skipNext = false;
         shiftWidthBy(width);
     }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @param p Point2D to retrieve the offsets from.
-     */
-    @Override
-    public void shiftBy(Point2D p) {
-        shiftBy(p.getX(), p.getY());
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @return The view height.
-     */
-    @Override
-    public double getViewHeight() {
-        return viewHeight.get();
-    }
+    
 
     /**
      * {@inheritDoc}
@@ -187,31 +167,11 @@ public abstract class AbstractVirtualizer implements Virtualizer {
     /**
      * {@inheritDoc}
      * 
-     * @return The view width.
-     */
-    @Override
-    public double getViewWidth() {
-        return viewWidth.get();
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
      * @return The view width property.
      */
     @Override
     public DoubleProperty viewWidth() {
         return viewWidth;
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @return The height offset.
-     */
-    @Override
-    public double getHeightOffset() {
-        return heightOffset.get();
     }
 
     /**
@@ -222,16 +182,6 @@ public abstract class AbstractVirtualizer implements Virtualizer {
     @Override
     public DoubleProperty heightOffset() {
         return heightOffset;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @return The width offser.
-     */
-    @Override
-    public double getWidthOffset() {
-        return widthOffset.get();
     }
     
     /**
@@ -247,31 +197,11 @@ public abstract class AbstractVirtualizer implements Virtualizer {
     /**
      * {@inheritDoc}
      *
-     * @return The total height.
-     */
-    @Override
-    public double getTotalHeight() {
-        return totalHeight.get();
-    }
-
-    /**
-     * {@inheritDoc}
-     *
      * @return The total height property.
      */
     @Override
     public DoubleProperty totalHeight() {
         return totalHeight;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @return The total width.
-     */
-    @Override
-    public double getTotalWidth() {
-        return totalWidth.get();
     }
 
     /**

@@ -15,7 +15,7 @@ import javafx.beans.property.ReadOnlyDoubleProperty;
  * @see AbstractLayout
  */
 public interface Layout<E> {
-
+    
     /**
      * Applies this layout to its structure.
      */
@@ -34,7 +34,9 @@ public interface Layout<E> {
      * 
      * @return Maximum used width offset.
      */
-    double getMaxUsedWidth();
+    default double getMaxUsedWidth() {
+        return maxUsedWidth().get();
+    }
 
     /**
      * Property of the maximum used width offset.
@@ -49,7 +51,9 @@ public interface Layout<E> {
      *
      * @return Maximum used height offset.
      */
-    double getMaxUsedHeight();
+    default double getMaxUsedHeight() {
+        return maxUsedHeight().get();
+    }
 
     /**
      * Property of the maximum used height offset.

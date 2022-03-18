@@ -22,7 +22,7 @@ class LayoutableListTest {
 
     List<Pojo> l = List.of(new Pojo("one"), new Pojo("two"), new Pojo("three"));
 
-    LayoutableList<Pojo> cList = new LayoutableList<Pojo>(l);
+    LayoutableList<Pojo> cList = new LayoutableList<>(l);
 
     
     @Test
@@ -89,10 +89,10 @@ class LayoutableListTest {
         assertTrue(l2.containsAll(l));
     }
     
-        @Test
+    @Test
     void moveListenerTest() {
         AtomicReference<StructureChange.Move<?>> cRef = new AtomicReference<>();
-        cList.addMoveListener(cRef::set);
+        cList.addMoveListener(this, cRef::set);
 
         var itr = cList.iterator();
         var p = itr.next();
@@ -114,14 +114,14 @@ class LayoutableListTest {
         AtomicReference<StructureChange.Move<?>> cRef = new AtomicReference<>(null);
         Consumer<StructureChange.Move<?>> csmr = cRef::set;
         
-        cList.addMoveListener(csmr);
+        cList.addMoveListener(this, csmr);
 
         var itr = cList.iterator();
         var p = itr.next();
         cList.repositionTo(p, 100d, 100d);
         
         assertNotNull(cRef.get());
-        cList.removeMoveListener(csmr);
+        cList.removeMoveListener(this, csmr);
         cRef.set(null);
         cList.repositionTo(p, 200d, 200d);
         assertNull(cRef.get());

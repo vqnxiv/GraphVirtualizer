@@ -54,6 +54,16 @@ public class CoordinatesElement<E> {
     }
 
     /**
+     * Constructor.
+     * 
+     * @param e Element.
+     * @param p Coordinates.
+     */
+    public CoordinatesElement(E e, Point2D p) {
+        this(e, p.getX(), p.getY());
+    }
+
+    /**
      * Copy constructor.
      * 
      * @param c The coordinates element to copy.

@@ -10,12 +10,10 @@ package io.github.vqnxiv.structure;
 public interface CoordinatesIterable<E> extends Iterable<E> {
     
     /**
-     * Returns a iterator over elements of type {@code T}.
+     * {@inheritDoc}
      *
      * @return an Iterator.
      */
-    // todo: rename to cIterator so it doesnt clash? 
-    //  + allows to only return one if Layoutable or smth <= no
     @Override
     CoordinatesIterator<E> iterator();
 }

@@ -49,27 +49,7 @@ public abstract class AbstractConstrainedLayout<E> extends AbstractLayout<E> imp
         maxAllowedWidth = new SimpleDoubleProperty(maxWidth);
         maxAllowedHeight = new SimpleDoubleProperty(maxHeight);
     }
-
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @return Maximum allowed width offset.
-     */
-    @Override
-    public double getMaxAllowedWidth() {
-        return maxAllowedWidth.get();
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param maxAllowedWidth New maximum allowed width offset.
-     */
-    @Override
-    public void setMaxAllowedWidth(double maxAllowedWidth) {
-        this.maxAllowedWidth.set(maxAllowedWidth);
-    }
+    
     
     /**
      * {@inheritDoc}
@@ -79,26 +59,6 @@ public abstract class AbstractConstrainedLayout<E> extends AbstractLayout<E> imp
     @Override
     public DoubleProperty maxAllowedWidth() {
         return maxAllowedWidth;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @return Maximum allowed height offset.
-     */
-    @Override
-    public double getMaxAllowedHeight() {
-        return maxAllowedHeight.get();
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param maxAllowedHeight New maximum allowed height offset.
-     */
-    @Override
-    public void setMaxAllowedHeight(double maxAllowedHeight) {
-        this.maxAllowedHeight.set(maxAllowedHeight);
     }
     
     /**

@@ -41,19 +41,7 @@ public class RandomLayout<E> extends AbstractConstrainedLayout<E> {
         super(s, maxWidth, maxHeight);
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param maxWidth  Maximum allowed width.
-     * @param maxHeight Maximum allowed height.
-     */
-    @Override
-    public void applyWithinBounds(double maxWidth, double maxHeight) {
-        maxAllowedWidth.set(maxWidth);
-        maxAllowedHeight.set(maxHeight);
-        apply();
-    }
-
+    
     /**
      * {@inheritDoc}
      */

@@ -42,9 +42,6 @@ public abstract class AbstractLayout<E> implements Layout<E> {
         structure = s;
         maxUsedWidth = new SimpleDoubleProperty(0);
         maxUsedHeight = new SimpleDoubleProperty(0);
-        
-        //structure.maximumWidth().bind(maxUsedWidth);
-        //structure.maximumHeight().bind(maxUsedHeight);
     }
 
     
@@ -60,32 +57,12 @@ public abstract class AbstractLayout<E> implements Layout<E> {
 
     /**
      * {@inheritDoc}
-     * 
-     * @return Maximum used width offset.
-     */
-    @Override
-    public double getMaxUsedWidth() {
-        return maxUsedWidth.get();
-    }
-
-    /**
-     * {@inheritDoc}
      *
      * @return Property of the maximum used width offset.
      */
     @Override
     public ReadOnlyDoubleProperty maxUsedWidth() {
         return maxUsedWidth;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @return Maximum used height offset.
-     */
-    @Override
-    public double getMaxUsedHeight() {
-        return maxUsedHeight.get();
     }
 
     /**

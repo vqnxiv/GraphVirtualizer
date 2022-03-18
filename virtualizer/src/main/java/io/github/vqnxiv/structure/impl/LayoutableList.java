@@ -24,13 +24,13 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
     /**
      * On event consumers. 
      */
-    private final List<Consumer<? super StructureChange.Move<E>>> consumers = new ArrayList<>();
+    private final Map<Object, List<Consumer<? super StructureChange.Move<E>>>> consumers = new HashMap<>();
 
     /**
-     * Modification counter for iterator concurrent modification.
+     * Modification counter for internalItr concurrent modification.
      */
     private int modCount = 0;
-    
+
     
     /**
      * Constructor.
@@ -72,13 +72,13 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
     public void repositionTo(CoordinatesElement<E> e, double x, double y) {
         // < 0 check?
         
-        int i = elements.indexOf(e);
+        int i = elements().indexOf(e);
         if(i < 0) {
             return;
         }
 
         var cp = new CoordinatesElement<>(e);
-        var e2 = elements.get(i);
+        var e2 = elements().get(i);
         e2.setX(x);
         e2.setY(y);
         if(x > maxWidth.get()) {
@@ -90,8 +90,8 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
         
         var pTL = new Point2D(Math.min(cp.getX(), x), Math.min(cp.getY(), y));
         var pBR = new Point2D(Math.max(cp.getX(), x), Math.max(cp.getY(), y));
-        modCount++;
-        fireEvent(Map.of(cp, e2.getXY()), pTL, pBR);
+        modified();
+        fireMoveEvent(Map.of(cp, e2.getXY()), pTL, pBR);
     }
 
     /**
@@ -127,12 +127,12 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
         double maxy = 0;
         
         for(var e : m.entrySet()) {
-            int i = elements.indexOf(e.getKey());
+            int i = elements().indexOf(e.getKey());
             if(i < 0) {
                 continue;
             }
             
-            var e2 = elements.get(i);
+            var e2 = elements().get(i);
             maxx = Math.max(maxx, e.getValue().getX());
             maxy = Math.max(maxy, e.getValue().getY());
 
@@ -165,38 +165,78 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
             maxHeight.set(maxy);
         }
         
-        modCount++;
-        fireEvent(changed, new Point2D(minChangedX, minChangedY), new Point2D(maxChangedX, maxChangedY));
+        modified();
+        fireMoveEvent(changed, new Point2D(minChangedX, minChangedY), new Point2D(maxChangedX, maxChangedY));
     }
 
+    
     /**
      * Notifies all the consumers.
      */
-    protected void fireEvent(Map<CoordinatesElement<E>, Point2D> m, Point2D topLeft, Point2D bottomRight) {
+    private void fireMoveEvent(Map<CoordinatesElement<E>, Point2D> m, Point2D topLeft, Point2D bottomRight) {
         var e = StructureChange.moved(this, m, topLeft, bottomRight);
-        for(var c : consumers) {
-            c.accept(e);
+        for(var l : consumers.values()) {
+            l.forEach(c -> c.accept(e));
+        }
+    }
+    
+    /**
+     * Increases the modification count.
+     */
+    protected void modified() {
+        modCount++;
+    }
+    
+    
+    /**
+     * {@inheritDoc}
+     *
+     * @param owner  The listener owner.
+     * @param action The action to perform.
+     */
+    @Override
+    public void addMoveListener(Object owner, Consumer<? super StructureChange.Move<E>> action) {
+        consumers.computeIfAbsent(owner, l -> new ArrayList<>());
+        consumers.get(owner).add(action);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param owner  The listener owner.
+     * @param action The action to stop doing.
+     */
+    @Override
+    public void removeMoveListener(Object owner, Consumer<? super StructureChange.Move<E>> action) {
+        var l = consumers.get(owner);
+        if(l != null) {
+            l.remove(action);
         }
     }
 
     /**
      * {@inheritDoc}
      *
-     * @param action The action to perform.
+     * @param owner The listeners owner.
+     * @return The removed listeners.
      */
     @Override
-    public void addMoveListener(Consumer<? super StructureChange.Move<E>> action) {
-        consumers.add(action);
+    public Collection<Consumer<? super StructureChange.Move<E>>> clearMoveListeners(Object owner) {
+        var l =  consumers.remove(owner);
+        return (l != null) ? l : List.of();
     }
-
+    
     /**
      * {@inheritDoc}
      *
-     * @param action The action to stop doing.
+     * @return The removed listeners.
      */
     @Override
-    public void removeMoveListener(Consumer<? super StructureChange.Move<E>> action) {
-        consumers.remove(action);
+    public Collection<Consumer<? super StructureChange.Move<E>>> clearMoveListeners() {
+        var l = new ArrayList<Consumer<? super StructureChange.Move<E>>>();
+        consumers.values().forEach(l::addAll);
+        consumers.clear();
+        return l;
     }
 
     /**
@@ -208,7 +248,7 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
     public CoordinatesIterator<CoordinatesElement<E>> iterator() {
         return new LayoutableIterator();
     }
-
+    
     
     /**
      * Extension of {@link io.github.vqnxiv.structure.impl.CoordinatesList.CoordsListIterator}
@@ -217,7 +257,7 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
     protected class LayoutableIterator extends CoordsListIterator {
 
         /**
-         * Last seen element.
+         * Last seen elements.
          */
         private CoordinatesElement<E> lastElt;
 
@@ -233,28 +273,25 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
         protected LayoutableIterator() { 
             expectedModCount = modCount;
         }
-        
-        
+
+
         /**
-         * Getter for the last seen element.
-         *
-         * @return The last seen element.
+         * Sets the the last element to null.
          */
-        // not needed? for iterator.remove() can just itr.remove()
-        // => then need protected getter for itr
-        protected CoordinatesElement<E> lastElt() {
-            return lastElt;
+        protected void nullLast() {
+            lastElt = null;
         }
         
+        
         /**
-         * Returns the next element in the iteration.
+         * {@inheritDoc}
          *
          * @return the next element in the iteration
          * @throws NoSuchElementException if the iteration has no more elements
          */
         @Override
         public CoordinatesElement<E> next() {
-            // the underlying list itself isn't changed
+            // the underlying list itself isn't changed 
             // so it could be done, but that way it's
             // consistent w/ matrix + potentially other structures?
             if(expectedModCount != modCount) {
@@ -265,26 +302,18 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
         }
 
         /**
-         * Repositions the last element returned this iterator (optional operation).
+         * {@inheritDoc}
          *
          * @param x New X coordinate.
          * @param y New Y coordinate.
          */
         @Override
         public void reposition(double x, double y) {
+            if(lastElt == null) {
+                throw new IllegalStateException();
+            }
             repositionTo(lastElt, x, y);
             modCount--; // blergh
-        }
-
-        /**
-         * Repositions the last element returned this iterator (optional operation).
-         *
-         * @param p New X/Y coordinates.
-         */
-        @Override
-        public void reposition(Point2D p) {
-            repositionTo(lastElt, p);
-            modCount--;
         }
     }
 }

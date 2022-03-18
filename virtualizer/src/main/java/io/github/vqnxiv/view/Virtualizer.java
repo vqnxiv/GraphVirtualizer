@@ -47,7 +47,9 @@ public interface Virtualizer {
      *
      * @param p Point2D to retrieve the offsets from.
      */
-    void shiftBy(Point2D p);
+    default void shiftBy(Point2D p) {
+        shiftBy(p.getX(), p.getY());
+    }
 
 
     /**
@@ -80,7 +82,9 @@ public interface Virtualizer {
      * 
      * @return The view height.
      */
-    double getViewHeight();
+    default double getViewHeight() {
+        return viewHeight().get();
+    }
 
     /**
      * Getter for the view height property.
@@ -94,7 +98,9 @@ public interface Virtualizer {
      *
      * @return The view width.
      */
-    double getViewWidth();
+    default double getViewWidth() {
+        return viewWidth().get();
+    }
 
     /**
      * Getter for the view width property.
@@ -108,7 +114,9 @@ public interface Virtualizer {
      *
      * @return The height offset.
      */
-    double getHeightOffset();
+    default double getHeightOffset() {
+        return heightOffset().get();
+    }
 
     /**
      * Getter for the height offset property.
@@ -122,7 +130,9 @@ public interface Virtualizer {
      *
      * @return The width offser.
      */
-    double getWidthOffset();
+    default double getWidthOffset() {
+        return widthOffset().get();
+    }
 
     /**
      * Getter for the width offset property.
@@ -136,7 +146,9 @@ public interface Virtualizer {
      *
      * @return The total height.
      */
-    double getTotalHeight();
+    default double getTotalHeight() {
+        return totalHeight().get();
+    }
 
     /**
      * Getter for the total height property.
@@ -150,7 +162,9 @@ public interface Virtualizer {
      *
      * @return The total width.
      */
-    double getTotalWidth();
+    default double getTotalWidth() {
+        return totalWidth().get();
+    }
 
     /**
      * Getter for the total width property.

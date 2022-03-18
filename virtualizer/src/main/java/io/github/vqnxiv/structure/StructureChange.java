@@ -60,7 +60,8 @@ public abstract class StructureChange {
      * @param <E> The type of elements in the structure.
      * @return A change object containing the above information.
      */
-    public static <E> Addition<E> added(MutableStructure<E> structure, List<CoordinatesElement<E>> elements, Point2D topLeft, Point2D bottomRight) {
+    public static <E> Addition<E> added(MutableStructure<E> structure, List<CoordinatesElement<E>> elements, 
+                                        Point2D topLeft, Point2D bottomRight) {
         return new Addition<>(structure, elements, topLeft, bottomRight);
     }
 
@@ -74,7 +75,8 @@ public abstract class StructureChange {
      * @param <E> The type of elements in the structure.
      * @return A change object containing the above information.
      */
-    public static <E> Removal<E> removed(MutableStructure<E> structure, List<CoordinatesElement<E>> elements, Point2D topLeft, Point2D bottomRight) {
+    public static <E> Removal<E> removed(MutableStructure<E> structure, List<CoordinatesElement<E>> elements, 
+                                         Point2D topLeft, Point2D bottomRight) {
         return new Removal<>(structure, elements, topLeft, bottomRight);
     }
 
@@ -147,7 +149,8 @@ public abstract class StructureChange {
          * @param topLeft     The top left coordinates of the area in which the change happened.
          * @param bottomRight The bottom right coordinates of the area in which the change happened.
          */
-        public Move(LayoutableStructure<E> structure, Map<CoordinatesElement<E>, Point2D> elements, Point2D topLeft, Point2D bottomRight) {
+        private Move(LayoutableStructure<E> structure, Map<CoordinatesElement<E>, Point2D> elements, 
+                    Point2D topLeft, Point2D bottomRight) {
             super(topLeft, bottomRight);
             this.structure = structure;
             this.elements = Map.copyOf(elements);
@@ -230,7 +233,8 @@ public abstract class StructureChange {
          * @param topLeft     The top left coordinates of the area in which the change happened.
          * @param bottomRight The bottom right coordinates of the area in which the change happened.
          */
-        private AbstractMut(MutableStructure<E> structure, List<CoordinatesElement<E>> elements, Point2D topLeft, Point2D bottomRight) {
+        private AbstractMut(MutableStructure<E> structure, List<CoordinatesElement<E>> elements, 
+                            Point2D topLeft, Point2D bottomRight) {
             super(topLeft, bottomRight);
             this.structure = structure;
             this.elements = List.copyOf(elements);
@@ -298,7 +302,7 @@ public abstract class StructureChange {
          * @param topLeft     The top left coordinates of the area in which the change happened.
          * @param bottomRight The bottom right coordinates of the area in which the change happened.
          */
-        public Addition(MutableStructure<E> structure, List<CoordinatesElement<E>> elements, 
+        private Addition(MutableStructure<E> structure, List<CoordinatesElement<E>> elements, 
                         Point2D topLeft, Point2D bottomRight) {
             super(structure, elements, topLeft, bottomRight);
         }
@@ -336,7 +340,7 @@ public abstract class StructureChange {
          * @param topLeft     The top left coordinates of the area in which the change happened.
          * @param bottomRight The bottom right coordinates of the area in which the change happened.
          */
-        public Removal(MutableStructure<E> structure, List<CoordinatesElement<E>> elements,
+        private Removal(MutableStructure<E> structure, List<CoordinatesElement<E>> elements,
                         Point2D topLeft, Point2D bottomRight) {
             super(structure, elements, topLeft, bottomRight);
         }

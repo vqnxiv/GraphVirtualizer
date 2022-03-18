@@ -9,11 +9,11 @@ import io.github.vqnxiv.structure.LayoutableStructure;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.geometry.Point2D;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 
 /**
@@ -31,7 +31,7 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
     /**
      * List which contains all elements.
      */
-    protected final List<CoordinatesElement<E>> elements;
+    private final List<CoordinatesElement<E>> elements;
 
     /**
      * Maximum height in this structure.
@@ -72,11 +72,7 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
      * 
      * @param el Structure to copy.
      */
-    // keep this even if structure extends collection
-    // as this one allows to keep coordinates information
-    // and not just the elements
     public CoordinatesList(CoordinatesStructure<E> el) {
-        // just copy the list maybe? > elements = el.elements;
         elements = new ArrayList<>();
         for(var e : el) {
             elements.add(new CoordinatesElement<>(e));
@@ -85,6 +81,16 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
         maxHeight.set(el.maximumHeight().get());
     }
 
+
+    /**
+     * Getter for {@link #elements}.
+     * 
+     * @return {@link #elements}.
+     */
+    protected List<CoordinatesElement<E>> elements() {
+        return elements;
+    }
+    
     
     /**
      * {@inheritDoc}
@@ -125,14 +131,33 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
 
     /**
      * {@inheritDoc}
-     * 
-     * @param topLeft       Top left corner.
-     * @param bottomRight   Bottom right corner.
+     *
+     * @param topLeftX     Top left corner X coordinate.
+     * @param topLeftY     Top left corner Y coordinate.
+     * @param bottomRightX Bottom right corner X coordinate.
+     * @param bottomRightY Bottom right corner Y coordinate.
+     * @param condition    Filtering condition.
      * @return Collection of all elements within the area.
      */
     @Override
-    public Collection<CoordinatesElement<E>> between(Point2D topLeft, Point2D bottomRight) {
-        return between(topLeft.getX(), topLeft.getY(), bottomRight.getX(), bottomRight.getY());
+    public Collection<CoordinatesElement<E>> between(double topLeftX, double topLeftY, 
+                                                     double bottomRightX, double bottomRightY, 
+                                                     Predicate<E> condition) {
+        List<CoordinatesElement<E>> l = new ArrayList<>();
+        
+        if(topLeftX >= bottomRightX || topLeftY >= bottomRightY
+            || topLeftX >= maxWidth.get() || topLeftY >= maxHeight.get()
+            || bottomRightX <= 0 || bottomRightY <= 0) {
+            return l;
+        }
+        
+        for(var e : elements) {
+            if(e.isIn(topLeftX, topLeftY, bottomRightX, bottomRightY) && condition.test(e.getElement())) {
+                l.add(e);
+            }
+        }
+
+        return l;
     }
 
     /**
@@ -153,6 +178,63 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
     @Override
     public ReadOnlyDoubleProperty maximumWidth() {
         return maxWidth;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return The number of elements in this structure.
+     */
+    @Override
+    public int size() {
+        return elements.size();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param element The element to search for.
+     * @return {@code true} if this structure contains the specified element.
+     */
+    @Override
+    public boolean contains(CoordinatesElement<E> element) {
+        return elements.contains(element);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param element The element to find.
+     * @return The coordinates of the given element if it is in the structure.
+     */
+    @Override
+    public Optional<CoordinatesElement<E>> coordinatesOf(E element) {
+        for(var c : elements) {
+            if(c.getElement().equals(element)) {
+                return Optional.of(c);
+            }
+        }
+        
+        return Optional.empty();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param elements The elements to find.
+     * @return The coordinates of the given elements that are in the structure.
+     */
+    @Override
+    public Map<E, CoordinatesElement<E>> coordinatesOf(Collection<E> elements) {
+        var m = new HashMap<E, CoordinatesElement<E>>();
+        
+        for(var e : elements) {
+            coordinatesOf(e).ifPresent(
+                c -> m.put(e, c)
+            );
+        }
+        
+        return m;
     }
 
     /**
@@ -185,13 +267,13 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
      * Iterator for this class. Protected so that extension of
      * this class can reuse this as a base (e.g place remove for mutable collection, etc).
      * <p>
-     * No concurrent modification checking is done as this iterator is a simple wrapper
-     * around a list iterator, just like this structure is a wrapper around an arraylist.
+     * No concurrent modification checking is done as this internalItr is a simple wrapper
+     * around a list internalItr, just like this structure is a wrapper around an arraylist.
      */
     protected class CoordsListIterator implements CoordinatesIterator<CoordinatesElement<E>> {
 
         /**
-         * Iterator backing up this iterator.
+         * Iterator backing up this internalItr.
          */
         private final Iterator<CoordinatesElement<E>> itr;
         
@@ -203,7 +285,17 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
             itr = elements.iterator();
         }
 
- 
+
+        /**
+         * Getter for the internal iterator.
+         * 
+         * @return The internal iterator.
+         */
+        protected Iterator<CoordinatesElement<E>> internalItr() {
+            return itr;
+        }
+        
+        
         /**
          * Returns {@code true} if the iteration has more elements.
          * (In other words, returns {@code true} if {@link #next} would

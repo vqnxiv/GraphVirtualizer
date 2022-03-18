@@ -2,6 +2,7 @@ package io.github.vqnxiv.structure.impl;
 
 
 import io.github.vqnxiv.layout.RandomLayout;
+import io.github.vqnxiv.structure.CoordinatesElement;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -50,6 +51,18 @@ class CoordinatesMatrixTest {
         for(var e : matrix) {
             System.out.println(e);
         }
+    }
+
+    @Test
+    void containsTest() {
+        matrix = new CoordinatesMatrix<>(l, RandomLayout::new);
+        var c = matrix.iterator().next();
+        var c2 = new CoordinatesElement<>(c);
+        c2.setX(c.getX() / 2);
+
+        assertTrue(matrix.contains(c));
+        assertTrue(matrix.contains(c2.getElement()));
+        assertFalse(matrix.contains(c2));
     }
     
 }

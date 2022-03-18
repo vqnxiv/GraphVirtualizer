@@ -21,8 +21,9 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
     /**
      * On event consumers. 
      */
-    private final List<Consumer<? super StructureChange.Move<E>>> consumers = new ArrayList<>();
-    
+    private final Map<Object, List<Consumer<? super StructureChange.Move<E>>>> consumers = new HashMap<>();
+
+
 
     /**
      * Constructor.
@@ -33,6 +34,12 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
         super(el);
     }
 
+    /**
+     * Constructor.
+     * 
+     * @param el             Elements
+     * @param layoutSupplier Initial layout.
+     */
     public LayoutableMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier) {
         super(el);
         layoutSupplier.apply(this).apply();
@@ -169,22 +176,10 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
         
         layoutSupplier.apply(this).apply();
     }
-
     
-    /**
-     * Reposition one element to the given coordinates.
-     *
-     * @param e The elements with its old coordinates.
-     * @param x New X coordinate.
-     * @param y New Y coordinate.
-     */
-    @Override
-    public void repositionTo(CoordinatesElement<E> e, double x, double y) {
-        repositionTo(e, new Point2D(x, y));
-    }
 
     /**
-     * Reposition one element to the given coordinates.
+     * {@inheritDoc}
      *
      * @param e The elements with its old coordinates.
      * @param p The new coordinates for the element.
@@ -198,11 +193,11 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
 
         var pTL = new Point2D(Math.min(cp.getX(), p.getX()), Math.min(cp.getY(), p.getX()));
         var pBR = new Point2D(Math.max(cp.getX(), p.getX()), Math.max(cp.getY(), p.getY()));
-        fireEvent(Map.of(cp, p), pTL, pBR);
+        fireMoveEvent(Map.of(cp, p), pTL, pBR);
     }
 
     /**
-     * Reposition multiple elements to the given coordinates.
+     * {@inheritDoc}
      *
      * @param m Elements with their old coordinates mapped to
      *          their new coordinates.
@@ -239,41 +234,72 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
             return;
         }
         
-        fireEvent(changed, new Point2D(minChangedX, minChangedY), new Point2D(maxChangedX, maxChangedY));
+        fireMoveEvent(changed, new Point2D(minChangedX, minChangedY), new Point2D(maxChangedX, maxChangedY));
     }
-
+    
+    
     /**
      * Notifies all the consumers.
      */
-    protected void fireEvent(Map<CoordinatesElement<E>, Point2D> m, Point2D topLeft, Point2D bottomRight) {
+    private void fireMoveEvent(Map<CoordinatesElement<E>, Point2D> m, Point2D topLeft, Point2D bottomRight) {
         var e = StructureChange.moved(this, m, topLeft, bottomRight);
-        for(var c : consumers) {
-            c.accept(e);
+        for(var l : consumers.values()) {
+            l.forEach(c -> c.accept(e));
         }
     }
-    
+
 
     /**
      * {@inheritDoc}
      *
+     * @param owner  The listener owner.
      * @param action The action to perform.
      */
     @Override
-    public void addMoveListener(Consumer<? super StructureChange.Move<E>> action) {
-        consumers.add(action);
+    public void addMoveListener(Object owner, Consumer<? super StructureChange.Move<E>> action) {
+        consumers.computeIfAbsent(owner, l -> new ArrayList<>());
+        consumers.get(owner).add(action);
     }
 
     /**
      * {@inheritDoc}
      *
+     * @param owner  The listener owner.
      * @param action The action to stop doing.
      */
     @Override
-    public void removeMoveListener(Consumer<? super StructureChange.Move<E>> action) {
-        consumers.remove(action);
+    public void removeMoveListener(Object owner, Consumer<? super StructureChange.Move<E>> action) {
+        var l = consumers.get(owner);
+        if(l != null) {
+            l.remove(action);
+        }
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @param owner The listeners owner.
+     * @return The removed listeners.
+     */
+    @Override
+    public Collection<Consumer<? super StructureChange.Move<E>>> clearMoveListeners(Object owner) {
+        var l =  consumers.remove(owner);
+        return (l != null) ? l : List.of();
+    }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @return The removed listeners.
+     */
+    @Override
+    public Collection<Consumer<? super StructureChange.Move<E>>> clearMoveListeners() {
+        var l = new ArrayList<Consumer<? super StructureChange.Move<E>>>();
+        consumers.values().forEach(l::addAll);
+        consumers.clear();
+        return l;
+    }
+    
     /**
      * {@inheritDoc}
      *
@@ -328,7 +354,7 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
         }
 
         /**
-         * Repositions the last element returned this iterator (optional operation).
+         * {@inheritDoc}
          *
          * @param x New X coordinate.
          * @param y New Y coordinate.
@@ -340,17 +366,6 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
             updateNext(true);
         }
 
-        /**
-         * Repositions the last element returned this iterator (optional operation).
-         *
-         * @param p New X/Y coordinates.
-         */
-        @Override
-        public void reposition(Point2D p) {
-            repositionTo(last, p);
-            totalMoves++;
-            updateNext(true);
-        }
 
         /**
          * {@inheritDoc}
@@ -365,7 +380,7 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
         }
 
         /**
-         * Getter for the expected modification count.
+         * {@inheritDoc}
          *
          * @return The expected modification count.
          */

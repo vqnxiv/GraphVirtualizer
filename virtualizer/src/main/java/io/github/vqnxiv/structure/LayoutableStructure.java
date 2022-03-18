@@ -4,6 +4,7 @@ package io.github.vqnxiv.structure;
 import io.github.vqnxiv.structure.impl.LayoutableList;
 import javafx.geometry.Point2D;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -19,6 +20,7 @@ import java.util.function.Consumer;
  */
 public interface LayoutableStructure<E> extends CoordinatesStructure<E> {
 
+    
     /**
      * Reposition one element to the given coordinates.
      *
@@ -26,7 +28,9 @@ public interface LayoutableStructure<E> extends CoordinatesStructure<E> {
      * @param x New X coordinate.
      * @param y New Y coordinate.
      */
-    void repositionTo(CoordinatesElement<E> e, double x, double y);
+    default void repositionTo(CoordinatesElement<E> e, double x, double y) {
+        repositionTo(e, new Point2D(x, y));
+    }
     
     /**
      * Reposition one element to the given coordinates.
@@ -53,16 +57,33 @@ public interface LayoutableStructure<E> extends CoordinatesStructure<E> {
      * Multiple actions can be given to a single structure, and a
      * single action can be given to multiple structures.
      *
+     * @param owner  The listener owner.
      * @param action The action to perform.
      */
-    void addMoveListener(Consumer<? super StructureChange.Move<E>> action);
+    void addMoveListener(Object owner, Consumer<? super StructureChange.Move<E>> action);
 
     /**
      * The structure will no longer perform the given action when one or more
      * elements are repositioned. This requires giving the <u>exact same</u>
-     * consumer as the one that was passed to {@link #addMoveListener(Consumer)}.
+     * consumer as the one that was passed to {@link #addMoveListener(Object, Consumer)}.
      * 
+     * @param owner  The listener owner.
      * @param action The action to stop doing.
      */
-    void removeMoveListener(Consumer<? super StructureChange.Move<E>> action);
+    void removeMoveListener(Object owner, Consumer<? super StructureChange.Move<E>> action);
+
+    /**
+     * Removes and returns the move listeners from the given owner attached to this structure.
+     * 
+     * @param owner The listeners owner.
+     * @return The removed listeners.
+     */
+    Collection<Consumer<? super StructureChange.Move<E>>> clearMoveListeners(Object owner);
+    
+    /**
+     * Removes and returns the move listeners attached to this structure.
+     * 
+     * @return The removed listeners.
+     */
+    Collection<Consumer<? super StructureChange.Move<E>>> clearMoveListeners();
 }

@@ -10,7 +10,7 @@ import java.util.Iterator;
  * An extension of {@link Iterator} which also allows
  * to reposition elements.
  * 
- * @param <E>
+ * @param <E> Type of elements.
  */
 public interface CoordinatesIterator<E> extends Iterator<E> {
 
