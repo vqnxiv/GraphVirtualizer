@@ -195,7 +195,6 @@ public class TimedNodePool<D> implements DecoratedNodePool<D> {
     /**
      * Checks free nodes and clears out old ones if needed.
      */
-    // public?
     private void checkForRemoval() {
         if(isInBatch) {
             return;

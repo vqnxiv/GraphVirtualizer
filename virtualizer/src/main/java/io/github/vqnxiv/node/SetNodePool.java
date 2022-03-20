@@ -99,21 +99,14 @@ public class SetNodePool<D> implements DecoratedNodePool<D> {
      */
     @Override
     public void release(DecoratedNode<D> decoratedNode) {
+        if(decoratedNode.getDecorator().isEmpty()) {
+            usedNodes.entrySet().removeIf(e -> e.getValue() == decoratedNode);
+            return;
+        }
+
         if(usedNodes.remove(decoratedNode.getDecorator().get(), decoratedNode)) {
             decoratedNode.clearDecoration();
             freeNodes.add(decoratedNode);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @param decoratedNodes The decoratedNodes to return.
-     */
-    @Override
-    public void releaseAll(Collection<DecoratedNode<D>> decoratedNodes) {
-        for(var dec : decoratedNodes) {
-            release(dec);
         }
     }
 

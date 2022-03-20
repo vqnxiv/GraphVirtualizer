@@ -135,10 +135,10 @@ public class BoundedDoubleProperty extends SimpleDoubleProperty {
      * it will be set to the new minimum.
      *
      * @param min New minimum value.
+     * @throws IllegalArgumentException if the new min is greater than the max.
      */
     public void setMin(double min) {
         if(min > this.max) {
-            // UnsupportedOperationException?
             throw new IllegalArgumentException("Minimum bound greater than maximum bouund");
         }
         
@@ -154,6 +154,7 @@ public class BoundedDoubleProperty extends SimpleDoubleProperty {
      * it will be set to the new maximum. 
      *
      * @param max New maximum value.
+     * @throws IllegalArgumentException if the new max is less than the min.
      */
     public void setMax(double max) {
         if(max < this.min) {
@@ -223,30 +224,6 @@ public class BoundedDoubleProperty extends SimpleDoubleProperty {
      */
     @Override
     public void setValue(Number number) {
-        if(number == null) {
-            return;
-        }
-
-        var v = number.doubleValue();
-
-        if(v == get()) {
-            return;
-        }
-
-        if(v <= min) {
-            if(getValue() != min) {
-                super.setValue(min);
-            }
-            return;
-        }
-
-        if(v > max) {
-            if(getValue() != max) {
-                super.setValue(max);
-            }
-            return;
-        }
-
-        super.setValue(number);
+        set(number.doubleValue());
     }
 }

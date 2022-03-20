@@ -34,14 +34,24 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
     private final List<CoordinatesElement<E>> elements;
 
     /**
-     * Maximum height in this structure.
+     * Minimum width in this structure.
      */
-    protected final DoubleProperty maxHeight = new SimpleDoubleProperty();
+    private final DoubleProperty minWidth = new SimpleDoubleProperty();
+    
+    /**
+     * Minimum height in this structure.
+     */
+    private final DoubleProperty minHeight = new SimpleDoubleProperty();
 
     /**
      * Maximum width in this structure.
      */
-    protected final DoubleProperty maxWidth = new SimpleDoubleProperty();
+    private final DoubleProperty maxWidth = new SimpleDoubleProperty();
+
+    /**
+     * Maximum height in this structure.
+     */
+    private final DoubleProperty maxHeight = new SimpleDoubleProperty();
 
     
     /**
@@ -53,8 +63,13 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
         elements = new ArrayList<>();
         
         for(E e : el) {
-            elements.add(new CoordinatesElement<>(e, 0, 0));
+            elements.add(new CoordinatesElement<>(e));
         }
+        
+        minWidth.set(0);
+        minHeight.set(0);
+        maxWidth.set(0);
+        maxHeight.set(0);
     }
     
     /**
@@ -74,11 +89,15 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
      */
     public CoordinatesList(CoordinatesStructure<E> el) {
         elements = new ArrayList<>();
+        
         for(var e : el) {
             elements.add(new CoordinatesElement<>(e));
         }
-        maxWidth.set(el.maximumWidth().get());
-        maxHeight.set(el.maximumHeight().get());
+        
+        minWidth.set(el.getMinimumWidth());
+        minHeight.set(el.getMinimumHeight());
+        maxWidth.set(el.getMaximumWidth());
+        maxHeight.set(el.getMaximumHeight());
     }
 
 
@@ -89,6 +108,74 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
      */
     protected List<CoordinatesElement<E>> elements() {
         return elements;
+    }
+
+    /**
+     * Update dimensions properties.
+     */
+    protected void updateDimensions() {
+        double minW = Double.MAX_VALUE;
+        double minH = Double.MAX_VALUE;
+        double maxW = Double.MIN_VALUE; 
+        double maxH = Double.MIN_VALUE;
+        
+        for(var c : elements) {
+            minW = Math.min(minW, c.getX());
+            minH = Math.min(minH, c.getY());
+            maxW = Math.max(maxW, c.getX());
+            maxH = Math.max(maxH, c.getY());
+        }
+
+        setDimensions(minW, minH, maxW, maxH);
+    }
+
+    /**
+     * Checks if an element is out of the current bounds
+     * described by the dimensions properties.
+     * 
+     * @param c The element to check.
+     */
+    protected void setDimensionsIfOutside(CoordinatesElement<E> c) {
+        double minW = Math.min(minWidth.get(), c.getX());
+        double minH = Math.min(minHeight.get(), c.getY());
+        double maxW = Math.max(maxWidth.get(), c.getX());
+        double maxH = Math.max(maxHeight.get(), c.getY());
+        setDimensions(minW, minH, maxW, maxH);
+    }
+
+    /**
+     * Checks if an element is on a bound.
+     * 
+     * @param c The element to check.
+     * @return {@code true} if one of the element's coordinates is
+     * equal to one of the dimension properties.
+     */
+    protected boolean isOnBound(CoordinatesElement<E> c) {
+        return c.getX() == minWidth.get()  || c.getX() == maxWidth.get()
+            || c.getY() == minHeight.get() || c.getY() == maxHeight.get();
+    }
+
+    /**
+     * Sets the dimensions.
+     * 
+     * @param minW Potential new min width.
+     * @param minH Potential new min height.
+     * @param maxW Potential new max width.
+     * @param maxH Potential new max height.
+     */
+    protected void setDimensions(double minW, double minH, double maxW, double maxH) {
+        if(minW != minWidth.get()) {
+            minWidth.set(minW);
+        }
+        if(minH != minHeight.get()) {
+            minHeight.set(minH);
+        }
+        if(maxW != maxWidth.get()) {
+            maxWidth.set(maxW);
+        }
+        if(maxH != maxHeight.get()) {
+            maxHeight.set(maxH);
+        }
     }
     
     
@@ -161,13 +248,23 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
     }
 
     /**
-     * {@inheritDoc}
-     * 
-     * @return Max height property.
+     * Minimum width of this structure.
+     *
+     * @return Min width property.
      */
     @Override
-    public ReadOnlyDoubleProperty maximumHeight() {
-        return maxHeight;
+    public ReadOnlyDoubleProperty minimumWidth() {
+        return minWidth;
+    }
+
+    /**
+     * Minimum height of this structure.
+     *
+     * @return Min height property.
+     */
+    @Override
+    public ReadOnlyDoubleProperty minimumHeight() {
+        return minHeight;
     }
 
     /**
@@ -178,6 +275,16 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
     @Override
     public ReadOnlyDoubleProperty maximumWidth() {
         return maxWidth;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return Max height property.
+     */
+    @Override
+    public ReadOnlyDoubleProperty maximumHeight() {
+        return maxHeight;
     }
 
     /**

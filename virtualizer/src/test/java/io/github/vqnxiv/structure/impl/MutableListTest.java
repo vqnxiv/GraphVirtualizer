@@ -1,12 +1,16 @@
 package io.github.vqnxiv.structure.impl;
 
 
+import io.github.vqnxiv.layout.RandomLayout;
 import io.github.vqnxiv.structure.CoordinatesElement;
+import io.github.vqnxiv.structure.StructureChange;
 import javafx.geometry.Point2D;
 import org.junit.jupiter.api.Test;
 
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,7 +23,6 @@ class MutableListTest {
 
     MutableList<Pojo> cList = new MutableList<>(l);
 
-    
     @Test
     void add() {
         int size = cList.size();
@@ -200,6 +203,107 @@ class MutableListTest {
         assertTrue(cList.isEmpty());
         assertEquals(0, cList.size());
         assertFalse(cList.contains(new Pojo("one")));
+        assertEquals(0d, cList.getMinimumWidth());
+        assertEquals(0d, cList.getMinimumHeight());
+        assertEquals(0d, cList.getMaximumWidth());
+        assertEquals(0d, cList.getMaximumHeight());
+    }
+
+
+    @Test
+    void correctPropertyValues() {
+        assertEquals(0d, cList.getMinimumWidth());
+        assertEquals(0d, cList.getMinimumHeight());
+        assertEquals(0d, cList.getMaximumWidth());
+        assertEquals(0d, cList.getMaximumHeight());
+
+        var itr = cList.iterator();
+        var p = itr.next();
+        var p2 = itr.next();
+        var p3 = itr.next();
+        var p4 = new CoordinatesElement<>(new Pojo("four"), 100d, 80d);
+        
+        cList.addAt(p4);
+
+        assertEquals(0d, cList.getMinimumWidth());
+        assertEquals(0d, cList.getMinimumHeight());
+        assertEquals(100d, cList.getMaximumWidth());
+        assertEquals(80d, cList.getMaximumHeight());
+
+        cList.removeAllAt(List.of(p, p2, p3));
+
+        assertEquals(100d, cList.getMinimumWidth());
+        assertEquals(80d, cList.getMinimumHeight());
+        assertEquals(100d, cList.getMaximumWidth());
+        assertEquals(80d, cList.getMaximumHeight());
+    }
+    
+    @Test
+    void removeThroughItr() {
+        var itr = cList.iterator();
+        var p = itr.next();
+        assertTrue(cList.contains(p));
+        itr.remove();
+        assertFalse(cList.contains(p));
+    }
+    
+    @Test
+    void itrThrowsOnComod() {
+        var itr = cList.iterator();
+        itr.next();
+        cList.add(new Pojo("four"));
+        assertThrows(ConcurrentModificationException.class, itr::next);
+    }
+
+    @Test
+    void addListenerTest() {
+        AtomicReference<StructureChange.Addition<?>> aRef = new AtomicReference<>();
+        cList.addAdditionListener(this, aRef::set);
+        
+        var cp = new CoordinatesElement<>(new Pojo("four"), new Point2D(100d, 100d));
+        var cp2 = new CoordinatesElement<>(new Pojo("four"), new Point2D(10d, 10d));
+        cList.addAllAt(List.of(cp, cp2));
+
+        var m = aRef.get();
+        assertEquals(cList, m.structure());
+        assertEquals(2, m.elements().size());
+        assertTrue(m.elements().contains(cp));
+        assertTrue(m.elements().contains(cp2));
+        assertEquals(cp2.getXY(), m.topLeft());
+        assertEquals(cp.getXY(), m.bottomRight());
+    }
+
+    @Test
+    void rmListenerTest() {
+        AtomicReference<StructureChange.Removal<?>> rRef = new AtomicReference<>();
+        cList.addRemovalListener(this, rRef::set);
+        
+        var rl = new RandomLayout<>(cList); 
+        rl.apply();
+
+        var itr = cList.iterator();
+        var p = itr.next();
+        var p2 = itr.next();
+        
+        var tl = new Point2D(
+            Math.min(p.getX(), p2.getX()),
+            Math.min(p.getY(), p2.getY())
+        );
+        
+        var br = new Point2D(
+            Math.max(p.getX(), p2.getX()),
+            Math.max(p.getY(), p2.getY())
+        );
+        
+        cList.removeAllAt(List.of(p, p2));
+        
+        var m = rRef.get();
+        assertEquals(cList, m.structure());
+        assertEquals(2, m.elements().size());
+        assertTrue(m.elements().contains(p));
+        assertTrue(m.elements().contains(p2));
+        assertEquals(tl, m.topLeft());
+        assertEquals(br, m.bottomRight());
     }
     
 }

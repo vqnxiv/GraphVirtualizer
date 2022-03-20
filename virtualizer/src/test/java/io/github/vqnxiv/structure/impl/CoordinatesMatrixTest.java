@@ -1,11 +1,15 @@
 package io.github.vqnxiv.structure.impl;
 
 
+import io.github.vqnxiv.layout.AbstractLayout;
 import io.github.vqnxiv.layout.RandomLayout;
 import io.github.vqnxiv.structure.CoordinatesElement;
+import io.github.vqnxiv.structure.LayoutableStructure;
+import javafx.geometry.Point2D;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -19,6 +23,49 @@ class CoordinatesMatrixTest {
     List<Pojo> l = List.of(new Pojo("one"), new Pojo("two"), new Pojo("three")); 
     
     CoordinatesMatrix<Pojo> matrix = new CoordinatesMatrix<>(l);
+    
+    
+    private class PojoLayout extends AbstractLayout<Pojo> {
+
+        /**
+         * Constructor.
+         *
+         * @param s Structure.
+         */
+        protected PojoLayout(LayoutableStructure<Pojo> s) {
+            super(s);
+        }
+
+        /**
+         * Applies this layout to its structure.
+         */
+        @Override
+        public void apply() {
+            var m = new HashMap<CoordinatesElement<Pojo>, Point2D>();
+            for(var c : getStructure()) {
+                m.put(c, new Point2D(10d, 10d));
+            }
+            
+            getStructure().repositionAllTo(m);
+        }
+    }
+    
+    
+    @Test
+    void initialLayout() {
+        matrix = new CoordinatesMatrix<>(l, PojoLayout::new);
+
+        matrix.forEach(System.out::println);
+        
+        assertEquals(10d, matrix.getMinimumWidth());
+        assertEquals(10d, matrix.getMinimumHeight());
+        assertEquals(10d, matrix.getMaximumWidth());
+        assertEquals(10d, matrix.getMaximumHeight());
+        
+        matrix.forEach(
+            c -> assertEquals(c.getXY(), new Point2D(10d, 10d))
+        );
+    }
     
     @Test
     void iteratorGetsAllElementsAndEnds() {
@@ -43,14 +90,6 @@ class CoordinatesMatrixTest {
         
         assertFalse(itr.hasNext());
         assertThrows(NoSuchElementException.class, itr::next);
-    }
-
-    @Test
-    void initialLayout() {
-        matrix = new CoordinatesMatrix<>(l, RandomLayout::new);
-        for(var e : matrix) {
-            System.out.println(e);
-        }
     }
 
     @Test

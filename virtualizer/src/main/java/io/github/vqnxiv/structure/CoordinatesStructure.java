@@ -73,22 +73,70 @@ public interface CoordinatesStructure<E> extends CoordinatesIterable<Coordinates
                                               Predicate<E> condition) {
         return between(topLeft.getX(), topLeft.getY(), bottomRight.getX(), bottomRight.getY(), condition);
     }
-    
-    // todo: min height and width?
-    
-    /**
-     * Maximum height of this structure.
-     * 
-     * @return Max height property.
-     */
-    ReadOnlyDoubleProperty maximumHeight();
 
     /**
-     * Maxmimum width of this structure.
+     * Minimum width of this structure.
+     *
+     * @return Min width value.
+     */
+    default double getMinimumWidth() {
+        return minimumWidth().get();
+    }
+
+    /**
+     * Minimum width of this structure.
+     *
+     * @return Min width property.
+     */
+    ReadOnlyDoubleProperty minimumWidth();
+
+    /**
+     * minimum height of this structure.
+     *
+     * @return Min height value.
+     */
+    default double getMinimumHeight() {
+        return minimumHeight().get();
+    }
+
+    /**
+     * Minimum height of this structure.
+     *
+     * @return Min height property.
+     */
+    ReadOnlyDoubleProperty minimumHeight();
+
+    /**
+     * Maximum width of this structure.
+     *
+     * @return Max width value.
+     */
+    default double getMaximumWidth() {
+        return maximumWidth().get();
+    }
+
+    /**
+     * Maximum width of this structure.
      * 
      * @return Max width property.
      */
     ReadOnlyDoubleProperty maximumWidth();
+
+    /**
+     * Maximum height of this structure.
+     *
+     * @return Max height value.
+     */
+    default double getMaximumHeight() {
+        return maximumHeight().get();
+    }
+
+    /**
+     * Maximum height of this structure.
+     *
+     * @return Max height property.
+     */
+    ReadOnlyDoubleProperty maximumHeight();
 
     /**
      * Returns {@code true} if this structure contains no elements.

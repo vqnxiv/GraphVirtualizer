@@ -60,8 +60,6 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
         super(el);
     }
     
-
-    // todo: update max dimensions on all add/remove
     
     /**
      * {@inheritDoc}
@@ -75,6 +73,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
             return false;
         }
 
+        setDimensionsIfOutside(element);
         modified();
         fireAddEvent(List.of(element), element.getXY(), element.getXY());
         return true;
@@ -92,17 +91,19 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
 
         double minX = Double.MAX_VALUE;
         double minY = Double.MAX_VALUE;
-        double maxX = 0d;
-        double maxY = 0d;
+        double maxX = Double.MIN_VALUE;
+        double maxY = Double.MIN_VALUE;
         
         for(var c : coordinatesElements) {
-            if(elements().add(c)) {
-                l.add(c);
-                minX = Math.min(minX, c.getX());
-                maxX = Math.max(maxX, c.getX());
-                minY = Math.min(minY, c.getY());
-                maxY = Math.max(maxY, c.getY());
+            if(!elements().add(c)) {
+                continue;
             }
+            l.add(c);
+            minX = Math.min(minX, c.getX());
+            maxX = Math.max(maxX, c.getX());
+            minY = Math.min(minY, c.getY());
+            maxY = Math.max(maxY, c.getY());
+            setDimensionsIfOutside(c);
         }
         
         if(l.isEmpty()) {
@@ -126,6 +127,9 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
         for(int i = 0; i < elements().size(); i++) {
             if((c = elements().get(i)).getElement().equals(element)) {
                 elements().remove(i);
+                if(isOnBound(c)) {
+                    updateDimensions();
+                }
                 modified();
                 fireRmEvent(List.of(c), c.getXY(), c.getXY());
                 return true;
@@ -147,16 +151,22 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
 
         double minX = Double.MAX_VALUE;
         double minY = Double.MAX_VALUE;
-        double maxX = 0d;
-        double maxY = 0d;
+        double maxX = Double.MIN_VALUE;
+        double maxY = Double.MIN_VALUE;
+        
+        boolean updateDimensions = false;
         
         for(var c : elements()) {
-            if(elements.contains(c.getElement())) {
-                l.add(c);
-                minX = Math.min(minX, c.getX());
-                maxX = Math.max(maxX, c.getX());
-                minY = Math.min(minY, c.getY());
-                maxY = Math.max(maxY, c.getY());
+            if(!elements.contains(c.getElement())) {
+                continue;
+            }
+            l.add(c);
+            minX = Math.min(minX, c.getX());
+            maxX = Math.max(maxX, c.getX());
+            minY = Math.min(minY, c.getY());
+            maxY = Math.max(maxY, c.getY());
+            if(isOnBound(c)) {
+                updateDimensions = true;
             }
         }
         
@@ -165,6 +175,9 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
         }
         
         elements().removeAll(l);
+        if(updateDimensions) {
+            updateDimensions();
+        }
         modified();
         fireRmEvent(l, new Point2D(minX, minY), new Point2D(maxX, maxY));
         return true;
@@ -182,6 +195,9 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
             return false;
         }
 
+        if(isOnBound(element)) {
+            updateDimensions();
+        }
         modified();
         fireRmEvent(List.of(element), element.getXY(), element.getXY());
         return true;
@@ -199,16 +215,22 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
 
         double minX = Double.MAX_VALUE;
         double minY = Double.MAX_VALUE;
-        double maxX = 0d;
-        double maxY = 0d;
+        double maxX = Double.MIN_VALUE;
+        double maxY = Double.MIN_VALUE;
+
+        boolean updateDimensions = false;
 
         for(var c : coordinatesElements) {
-            if(elements().remove(c)) {
-                l.add(c);
-                minX = Math.min(minX, c.getX());
-                maxX = Math.max(maxX, c.getX());
-                minY = Math.min(minY, c.getY());
-                maxY = Math.max(maxY, c.getY());
+            if(!elements().remove(c)) {
+                continue;
+            }
+            l.add(c);
+            minX = Math.min(minX, c.getX());
+            maxX = Math.max(maxX, c.getX());
+            minY = Math.min(minY, c.getY());
+            maxY = Math.max(maxY, c.getY());
+            if(isOnBound(c)) {
+                updateDimensions = true;
             }
         }
 
@@ -216,6 +238,9 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
             return false;
         }
 
+        if(updateDimensions) {
+            updateDimensions();
+        }
         modified();
         fireRmEvent(l, new Point2D(minX, minY), new Point2D(maxX, maxY));
         return true;
@@ -233,16 +258,22 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
 
         double minX = Double.MAX_VALUE;
         double minY = Double.MAX_VALUE;
-        double maxX = 0d;
-        double maxY = 0d;
+        double maxX = Double.MIN_VALUE;
+        double maxY = Double.MIN_VALUE;
 
+        boolean updateDimensions = false;
+        
         for(var c : elements()) {
-            if(condition.test(c.getElement())) {
-                l.add(c);
-                minX = Math.min(minX, c.getX());
-                maxX = Math.max(maxX, c.getX());
-                minY = Math.min(minY, c.getY());
-                maxY = Math.max(maxY, c.getY());
+            if(!condition.test(c.getElement())) {
+                continue;
+            }
+            l.add(c);
+            minX = Math.min(minX, c.getX());
+            maxX = Math.max(maxX, c.getX());
+            minY = Math.min(minY, c.getY());
+            maxY = Math.max(maxY, c.getY());
+            if(isOnBound(c)) {
+                updateDimensions = true;
             }
         }
 
@@ -251,6 +282,9 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
         }
 
         elements().removeAll(l);
+        if(updateDimensions) {
+            updateDimensions();
+        }
         modified();
         fireRmEvent(l, new Point2D(minX, minY), new Point2D(maxX, maxY));
         return true;
@@ -268,16 +302,22 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
 
         double minX = Double.MAX_VALUE;
         double minY = Double.MAX_VALUE;
-        double maxX = 0d;
-        double maxY = 0d;
+        double maxX = Double.MIN_VALUE;
+        double maxY = Double.MIN_VALUE;
+
+        boolean updateDimensions = false;
 
         for(var c : elements()) {
-            if(condition.test(c)) {
-                l.add(c);
-                minX = Math.min(minX, c.getX());
-                maxX = Math.max(maxX, c.getX());
-                minY = Math.min(minY, c.getY());
-                maxY = Math.max(maxY, c.getY());
+            if(!condition.test(c)) {
+                continue;
+            }
+            l.add(c);
+            minX = Math.min(minX, c.getX());
+            maxX = Math.max(maxX, c.getX());
+            minY = Math.min(minY, c.getY());
+            maxY = Math.max(maxY, c.getY());
+            if(isOnBound(c)) {
+                updateDimensions = true;
             }
         }
 
@@ -286,6 +326,9 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
         }
 
         elements().removeAll(l);
+        if(updateDimensions) {
+            updateDimensions();
+        }
         modified();
         fireRmEvent(l, new Point2D(minX, minY), new Point2D(maxX, maxY));
         return true;
@@ -301,13 +344,13 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
         var l = List.copyOf(elements());
         
         elements().clear();
+
+        var p1 = new Point2D(getMinimumWidth(), getMinimumHeight());
+        var p2 = new Point2D(getMaximumWidth(), getMaximumHeight());
+        
+        setDimensions(0d, 0d, 0d, 0d);
         modified();
-        
-        var p = new Point2D(maxWidth.get(), maxHeight.get());
-        maxWidth.set(0);
-        maxHeight.set(0);
-        
-        fireRmEvent(l, new Point2D(0, 0), p);
+        fireRmEvent(l, p1, p2);
         return true;
     }
 
@@ -341,7 +384,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
      */
     @Override
     public void addAdditionListener(Object owner, Consumer<? super StructureChange.Addition<E>> action) {
-        addConsumers.computeIfAbsent(owner, l -> new ArrayList<>());
+        addConsumers.computeIfAbsent(owner, o -> new ArrayList<>());
         addConsumers.get(owner).add(action);  
     }
 
@@ -392,7 +435,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
      */
     @Override
     public void addRemovalListener(Object owner, Consumer<? super StructureChange.Removal<E>> action) {
-        rmConsumers.computeIfAbsent(owner, l -> new ArrayList<>());
+        rmConsumers.computeIfAbsent(owner, o -> new ArrayList<>());
         rmConsumers.get(owner).add(action);
     }
 
@@ -464,9 +507,10 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
          */
         @Override
         public void remove() {
-            // todo: event
             internalItr().remove();
+            fireRmEvent(List.of(getLast()), getLast().getXY(), getLast().getXY());
             nullLast();
+            updateExpectedModCount();
         }
     }
 }

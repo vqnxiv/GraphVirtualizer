@@ -2,7 +2,7 @@
 
 ---
 
-A few controls to easily allow control 'virtualization' in JavaFX.
+A few tools to help with control 'virtualization' in JavaFX.
 
 Originally made for large graphs (total of millions of nodes and displaying a few thousands),
 the virtualization part may be useful for other uses so it's in its own module.

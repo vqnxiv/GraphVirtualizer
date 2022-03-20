@@ -100,6 +100,59 @@ class LayoutableMatrixTest {
     }
 
     @Test
+    void correctPropertyValues() {
+        assertEquals(0d, matrix.getMinimumWidth());
+        assertEquals(0d, matrix.getMinimumHeight());
+        assertEquals(0d, matrix.getMaximumWidth());
+        assertEquals(0d, matrix.getMaximumHeight());
+
+        var itr = matrix.iterator();
+        var p = itr.next();
+        var p2 = itr.next();
+        var p3 = itr.next();
+
+        matrix.repositionTo(p, 500d, 500d);
+
+        assertEquals(0d, matrix.getMinimumWidth());
+        assertEquals(0d, matrix.getMinimumHeight());
+        assertEquals(500d, matrix.getMaximumWidth());
+        assertEquals(500d, matrix.getMaximumHeight());
+
+        matrix.repositionTo(p2, 510d, 510d);
+
+        assertEquals(0d, matrix.getMinimumWidth());
+        assertEquals(0d, matrix.getMinimumHeight());
+        assertEquals(510d, matrix.getMaximumWidth());
+        assertEquals(510d, matrix.getMaximumHeight());
+
+        matrix.repositionTo(p3, 200d, 200d);
+
+        assertEquals(200d, matrix.getMinimumWidth());
+        assertEquals(200d, matrix.getMinimumHeight());
+        assertEquals(510d, matrix.getMaximumWidth());
+        assertEquals(510d, matrix.getMaximumHeight());
+
+        matrix.repositionTo(p2, 400d, 400d);
+
+        assertEquals(200d, matrix.getMinimumWidth());
+        assertEquals(200d, matrix.getMinimumHeight());
+        assertEquals(500d, matrix.getMaximumWidth());
+        assertEquals(500d, matrix.getMaximumHeight());
+
+        matrix.repositionAllTo(
+            Map.of(
+                p, new Point2D(400d, 400d),
+                p3, new Point2D(400d, 400d)
+            )
+        );
+
+        assertEquals(400d, matrix.getMinimumWidth());
+        assertEquals(400d, matrix.getMinimumHeight());
+        assertEquals(400d, matrix.getMaximumWidth());
+        assertEquals(400d, matrix.getMaximumHeight());
+    }
+
+    @Test
     void moveListenerTest() {
         AtomicReference<StructureChange.Move<?>> cRef = new AtomicReference<>();
         matrix.addMoveListener(this, cRef::set);

@@ -23,7 +23,6 @@ class LayoutableListTest {
     List<Pojo> l = List.of(new Pojo("one"), new Pojo("two"), new Pojo("three"));
 
     LayoutableList<Pojo> cList = new LayoutableList<>(l);
-
     
     @Test
     void canRepositionNormally() {
@@ -87,6 +86,59 @@ class LayoutableListTest {
         assertEquals(l.size(), l2.size());
         assertTrue(l.containsAll(l2));
         assertTrue(l2.containsAll(l));
+    }
+    
+    @Test
+    void correctPropertyValues() {
+        assertEquals(0d, cList.getMinimumWidth());
+        assertEquals(0d, cList.getMinimumHeight());
+        assertEquals(0d, cList.getMaximumWidth());
+        assertEquals(0d, cList.getMaximumHeight());
+
+        var itr = cList.iterator();
+        var p = itr.next();
+        var p2 = itr.next();
+        var p3 = itr.next();
+        
+        cList.repositionTo(p, 500d, 500d);
+
+        assertEquals(0d, cList.getMinimumWidth());
+        assertEquals(0d, cList.getMinimumHeight());
+        assertEquals(500d, cList.getMaximumWidth());
+        assertEquals(500d, cList.getMaximumHeight());
+
+        cList.repositionTo(p2, 510d, 510d);
+
+        assertEquals(0d, cList.getMinimumWidth());
+        assertEquals(0d, cList.getMinimumHeight());
+        assertEquals(510d, cList.getMaximumWidth());
+        assertEquals(510d, cList.getMaximumHeight());
+
+        cList.repositionTo(p3, 200d, 200d);
+
+        assertEquals(200d, cList.getMinimumWidth());
+        assertEquals(200d, cList.getMinimumHeight());
+        assertEquals(510d, cList.getMaximumWidth());
+        assertEquals(510d, cList.getMaximumHeight());
+
+        cList.repositionTo(p2, 400d, 400d);
+
+        assertEquals(200d, cList.getMinimumWidth());
+        assertEquals(200d, cList.getMinimumHeight());
+        assertEquals(500d, cList.getMaximumWidth());
+        assertEquals(500d, cList.getMaximumHeight());
+        
+        cList.repositionAllTo(
+            Map.of(
+                p, new Point2D(400d, 400d),
+                p3, new Point2D(400d, 400d)
+            )
+        );
+
+        assertEquals(400d, cList.getMinimumWidth());
+        assertEquals(400d, cList.getMinimumHeight());
+        assertEquals(400d, cList.getMaximumWidth());
+        assertEquals(400d, cList.getMaximumHeight());
     }
     
     @Test

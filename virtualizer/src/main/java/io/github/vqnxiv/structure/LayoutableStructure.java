@@ -11,7 +11,16 @@ import java.util.function.Consumer;
 
 /**
  * Interface which allows the repositioning of a structure's elements, 
- * so that it can be used by a {@link io.github.vqnxiv.layout.Layout}.
+ * so that it can be used with a {@link io.github.vqnxiv.layout.Layout}.
+ * <p>
+ * When a structure is modified (reposition, add, remove, clear),
+ * it usually happens in the following order:
+ * <ol>
+ *     <li>the actual internal change happens</li>
+ *     <li>the structure's dimension properties are updated</li>
+ *     <li>the structure is internally marked as modified</li>
+ *     <li>the listeners/consumers are notified</li>
+ * </ol>
  * 
  * @param <E> Type of elements.
  *           

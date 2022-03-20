@@ -146,17 +146,37 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * Maximum number of columns.
      */
     private final int maxColNumber;
-    
+
     /**
-     * Maximum height in this structure.
+     * Minimum width in this structure.
      */
-    private final DoubleProperty maxHeight = new SimpleDoubleProperty();
+    private final DoubleProperty minWidth = new SimpleDoubleProperty();
+
+    /**
+     * Minimum height in this structure.
+     */
+    private final DoubleProperty minHeight = new SimpleDoubleProperty();
 
     /**
      * Maximum width in this structure.
      */
     private final DoubleProperty maxWidth = new SimpleDoubleProperty();
 
+    /**
+     * Maximum height in this structure.
+     */
+    private final DoubleProperty maxHeight = new SimpleDoubleProperty();
+
+    /**
+     * True maximum width before resizing.
+     */
+    private double trueMaxWdith;
+
+    /**
+     * True maximum height before resizing.
+     */
+    private double trueMaxHeight;
+    
     /**
      * Concurrent modification checker for {@link MatrixIterator}. 
      */
@@ -370,7 +390,10 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     }
 
     
-
+    // todo: dimensions update
+    // auto on move etc or manual?
+    // id say manual so its faster but idk
+    
     /**
      * Should be called whenever {@link #elements} is modified.
      */
@@ -616,7 +639,8 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return Collection of all elements within the area.
      */
     @Override
-    public Collection<CoordinatesElement<E>> between(double topLeftX, double topLeftY, double bottomRightX, double bottomRightY) {
+    public Collection<CoordinatesElement<E>> between(double topLeftX, double topLeftY, 
+                                                     double bottomRightX, double bottomRightY) {
         List<CoordinatesElement<E>> l = new ArrayList<>();
 
         // fail fast 
@@ -689,6 +713,26 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         }
 
         return l;
+    }
+
+    /**
+     * Minimum width of this structure.
+     *
+     * @return Min width property.
+     */
+    @Override
+    public ReadOnlyDoubleProperty minimumWidth() {
+        return minWidth;
+    }
+
+    /**
+     * Minimum height of this structure.
+     *
+     * @return Min height property.
+     */
+    @Override
+    public ReadOnlyDoubleProperty minimumHeight() {
+        return minHeight;
     }
 
     /**
@@ -841,7 +885,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
          * Expected modification count for concurrent modification.
          * Useless here as this version of the class is 'immutable'.
          */
-        private final int expectedModCount;
+        private int expectedModCount;
 
         /**
          * Whether the end of the structure was reached.
@@ -920,12 +964,10 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         }
 
         /**
-         * Getter for the expected modification count.
-         * 
-         * @return The expected modification count.
+         * Sets the expected mod count to the current mod count.
          */
-        protected int expectedModCount() {
-            return expectedModCount;
+        protected void updateExpectedModCount() {
+            expectedModCount = modCount;
         }
 
         /**
@@ -991,7 +1033,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
          * Concurrent modification checker.
          */
         private void checkForComod() {
-            if(expectedModCount() != modCount) {
+            if(expectedModCount != modCount) {
                 throw new ConcurrentModificationException();
             }
         }

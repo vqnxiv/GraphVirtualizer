@@ -1,14 +1,18 @@
 package io.github.vqnxiv.structure.impl;
 
 
+import io.github.vqnxiv.layout.AbstractLayout;
 import io.github.vqnxiv.layout.RandomLayout;
 import io.github.vqnxiv.structure.CoordinatesElement;
+import io.github.vqnxiv.structure.LayoutableStructure;
+import javafx.geometry.Point2D;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 class CoordinatesListTest {
@@ -19,13 +23,46 @@ class CoordinatesListTest {
 
     CoordinatesList<Pojo> cList;
     
+    private class PojoLayout extends AbstractLayout<Pojo> {
+
+        /**
+         * Constructor.
+         *
+         * @param s Structure.
+         */
+        protected PojoLayout(LayoutableStructure<Pojo> s) {
+            super(s);
+        }
+
+        /**
+         * Applies this layout to its structure.
+         */
+        @Override
+        public void apply() {
+            var m = new HashMap<CoordinatesElement<Pojo>, Point2D>();
+            for(var c : getStructure()) {
+                m.put(c, new Point2D(10d, 10d));
+            }
+            
+            getStructure().repositionAllTo(m);
+        }
+    }
+    
     
     @Test
     void initialLayout() {
-        cList = new CoordinatesList<>(l, RandomLayout::new);
-        for(var e : cList) {
-            System.out.println(e);
-        }
+        cList = new CoordinatesList<>(l, PojoLayout::new);
+
+        cList.forEach(System.out::println);
+        
+        assertEquals(10d, cList.getMinimumWidth());
+        assertEquals(10d, cList.getMinimumHeight());
+        assertEquals(10d, cList.getMaximumWidth());
+        assertEquals(10d, cList.getMaximumHeight());
+        
+        cList.forEach(
+            c -> assertEquals(c.getXY(), new Point2D(10d, 10d))
+        );
     }
     
     @Test

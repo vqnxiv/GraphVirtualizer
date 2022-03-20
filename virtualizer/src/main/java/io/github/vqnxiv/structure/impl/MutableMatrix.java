@@ -308,7 +308,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      */
     @Override
     public void addAdditionListener(Object owner, Consumer<? super StructureChange.Addition<E>> action) {
-        addConsumers.computeIfAbsent(owner, l -> new ArrayList<>());
+        addConsumers.computeIfAbsent(owner, o -> new ArrayList<>());
         addConsumers.get(owner).add(action);
     }
 
@@ -359,7 +359,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      */
     @Override
     public void addRemovalListener(Object owner, Consumer<? super StructureChange.Removal<E>> action) {
-        rmConsumers.computeIfAbsent(owner, l -> new ArrayList<>());
+        rmConsumers.computeIfAbsent(owner, p -> new ArrayList<>());
         rmConsumers.get(owner).add(action);
     }
 

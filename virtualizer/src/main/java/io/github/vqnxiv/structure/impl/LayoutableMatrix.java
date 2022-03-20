@@ -257,7 +257,7 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
      */
     @Override
     public void addMoveListener(Object owner, Consumer<? super StructureChange.Move<E>> action) {
-        consumers.computeIfAbsent(owner, l -> new ArrayList<>());
+        consumers.computeIfAbsent(owner, o -> new ArrayList<>());
         consumers.get(owner).add(action);
     }
 
@@ -325,11 +325,6 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
          * Last seen element.
          */
         private CoordinatesElement<E> last;
-        
-        /**
-         * Total number of moves.
-         */
-        private int totalMoves = 0;
 
         
         /**
@@ -362,7 +357,7 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
         @Override
         public void reposition(double x, double y) {
             repositionTo(last, x, y);
-            totalMoves++;
+            updateExpectedModCount();
             updateNext(true);
         }
 
@@ -380,25 +375,14 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
         }
 
         /**
-         * {@inheritDoc}
-         *
-         * @return The expected modification count.
-         */
-        // blegh
-        @Override
-        protected int expectedModCount() {
-            return super.expectedModCount() + totalMoves;
-        }
-
-        /**
          * Checks whether there is a next element and if it is valid (i.e non visited).
          * 
          * @return {@code true} if the next element is valid; {@code false} otherwise.
          */
         private boolean isCurrentNextValid() {
             return getPotentialNext().isPresent() 
-                && (visited == null // pains
-                || !visited.contains(getPotentialNext().get())
+                && (visited == null
+                || !visited.contains(getPotentialNext().orElse(null))
             );
         }
     }

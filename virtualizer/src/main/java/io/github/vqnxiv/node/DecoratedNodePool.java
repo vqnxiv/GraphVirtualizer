@@ -33,7 +33,9 @@ public interface DecoratedNodePool<D> {
      * @param ds Decorators.
      * @return Multiple instances of DecoratedNode.
      */
-    Collection<DecoratedNode<D>> getAll(Collection<D> ds);
+    default Collection<DecoratedNode<D>> getAll(Collection<D> ds) {
+        return ds.stream().map(this::get).flatMap(Optional::stream).toList();
+    }
 
     /**
      * Returns an instance of DecoratedNode to the pool.
@@ -47,7 +49,9 @@ public interface DecoratedNodePool<D> {
      * 
      * @param decoratedNodes The decoratedNodes to return.
      */
-    void releaseAll(Collection<DecoratedNode<D>> decoratedNodes);
+    default void releaseAll(Collection<DecoratedNode<D>> decoratedNodes) {
+        decoratedNodes.forEach(this::release);
+    }
 
     /**
      * Clears the free nodes.
