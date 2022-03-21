@@ -2,14 +2,26 @@ package io.github.vqnxiv.structure.impl;
 
 
 import io.github.vqnxiv.layout.Layout;
-import io.github.vqnxiv.structure.*;
+import io.github.vqnxiv.structure.CoordinatesElement;
+import io.github.vqnxiv.structure.CoordinatesIterator;
+import io.github.vqnxiv.structure.CoordinatesStructure;
+import io.github.vqnxiv.structure.LayoutableStructure;
+import io.github.vqnxiv.structure.LocalizedStructure;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Point2D;
 
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.ConcurrentModificationException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -220,7 +232,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     public CoordinatesMatrix(CoordinatesStructure<E> c) {
         this(
             c,
-            c.maximumWidth().get(), c.maximumHeight().get(),
+            c.getMaximumWidth(), c.getMaximumHeight(),
             DEFAULT_ROW_NUMBER, DEFAULT_COL_NUMBER,
             DEFAULT_MAX_WIDTH_INCREASE, DEFAULT_MAX_HEIGHT_INCREASE,
             DEFAULT_MAX_ROW_NUMBER, DEFAULT_MAX_COL_NUMBER
@@ -235,7 +247,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     public CoordinatesMatrix(CoordinatesMatrix<E> m) {
         this(
             m,
-            m.maxWidth.get(), m.maxHeight.get(),
+            m.trueMaxWdith, m.trueMaxHeight,
             m.elements.length, m.elements[0].length,
             m.maxRowRangeIncrease, m.maxColRangeIncrease,
             m.maxRowNumber, m.maxColNumber
@@ -282,15 +294,20 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
                 t[i] = new ArrayList<>();
             }
         }
+        
+        trueMaxWdith = initialWidth;
+        trueMaxHeight = initialHeight;
 
-        maxWidth.set(initialWidth);
-        maxHeight.set(initialHeight);
+        minWidth.set(0);
+        minHeight.set(0);
+        maxWidth.set(0);
+        maxHeight.set(0);
 
         rowRange = (int) (maxWidth.get() / initialRowNumber);
         colRange = (int) (maxHeight.get() / initialColNumber);
 
         for(E e : el) {
-            elements[0][0].add(new CoordinatesElement<>(e, 0, 0));
+            elements[0][0].add(new CoordinatesElement<>(e));
         }
         
         size = el.size();
@@ -326,6 +343,10 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
             place(e);
         }
 
+        minWidth.set(el.getMinimumWidth());
+        minHeight.set(el.getMinimumHeight());
+        maxWidth.set(el.getMaximumWidth());
+        maxHeight.set(el.getMaximumHeight());
         size = el.size();
     }
     
@@ -388,11 +409,6 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
             )
         );
     }
-
-    
-    // todo: dimensions update
-    // auto on move etc or manual?
-    // id say manual so its faster but idk
     
     /**
      * Should be called whenever {@link #elements} is modified.
@@ -409,9 +425,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return Point2D which contains the coordinates.
      */
     protected Point2D indexesOf(CoordinatesElement<E> p) {
-        int i = (int) (p.getX() / maxWidth.get() * elements.length);
-        int j = (int) (p.getY() / maxHeight.get() * elements[0].length);
-        return new Point2D(i, j);
+        return indexesOf(p.getX(), p.getY());
     }
 
     /**
@@ -422,9 +436,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return Point2D which contains the coordinates.
      */
     protected Point2D indexesOf(Point2D p) {
-        int i = (int) (p.getX() / maxWidth.get() * elements.length);
-        int j = (int) (p.getY() / maxHeight.get() * elements[0].length);
-        return new Point2D(i, j);
+        return indexesOf(p.getX(), p.getY());
     }
 
     /**
@@ -436,11 +448,11 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return Point2D which contains the coordinates.
      */
     protected Point2D indexesOf(double x, double y) {
-        int i = (int) (x / maxWidth.get() * elements.length);
-        int j = (int) (y / maxHeight.get() * elements[0].length);
+        int i = (int) (x / trueMaxWdith * elements.length);
+        int j = (int) (y / trueMaxHeight * elements[0].length);
         return new Point2D(i, j);
     }
-
+    
     /**
      * Helper method which adds the given element 
      * to {@link #elements}.
@@ -453,6 +465,8 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         if(!getListAt(indexesOf(c)).add(c)) {
             return false;
         }
+        size++;
+        setDimensionsIfOutside(c);
         modified();
         return true;
     }
@@ -464,9 +478,13 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @param c The element to remove.
      * @return {@code true} if it was removed; {@code false} otherwise.
      */
-    protected boolean remove(CoordinatesElement<E> c) {
+    protected boolean delete(CoordinatesElement<E> c) {
         if(!getListAt(indexesOf(c)).remove(c)) {
             return false;
+        }
+        size--;
+        if(isOnBound(c)) {
+            updateDimensions();
         }
         modified();
         return true;
@@ -488,9 +506,19 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         }
         
         ensureSize(x, y);
+        boolean bound = isOnBound(c);
+        
         getListAt(indexesOf(x, y)).add(c);
         c.setX(x);
         c.setY(y);
+        
+        if(bound) {
+            updateDimensions();
+        }
+        else {
+            setDimensionsIfOutside(c);
+        }
+
         modified();
         return true;
     }
@@ -509,6 +537,21 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     }
 
     /**
+     * Empties {@link #elements}.
+     */
+    protected void emptyElements() {
+        for(var t : elements) {
+            for(var l : t) {
+                l.clear();
+            }
+        }
+        
+        size = 0;
+        modified();
+        setDimensions(0d, 0d, 0d, 0d);
+    }
+
+    /**
      * Helper method which gets a list from {@link #elements}.
      * 
      * @param p Coordinates.
@@ -519,8 +562,100 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         int y = Math.min((int) p.getY(), maxColNumber - 1);
         return elements[Math.max(x, 0)][Math.max(y, 0)];
     }
-    
 
+    /**
+     * Checks if an element is out of the current bounds
+     * described by the dimensions properties.
+     *
+     * @param c The element to check.
+     */
+    protected void setDimensionsIfOutside(CoordinatesElement<E> c) {
+        double minW = Math.min(minWidth.get(), c.getX());
+        double minH = Math.min(minHeight.get(), c.getY());
+        double maxW = Math.max(maxWidth.get(), c.getX());
+        double maxH = Math.max(maxHeight.get(), c.getY());
+        setDimensions(minW, minH, maxW, maxH);
+    }
+
+    /**
+     * Checks if an element is on a bound.
+     *
+     * @param c The element to check.
+     * @return {@code true} if one of the element's coordinates is
+     * equal to one of the dimension properties.
+     */
+    protected boolean isOnBound(CoordinatesElement<E> c) {
+        return c.getX() == minWidth.get()  || c.getX() == maxWidth.get()
+            || c.getY() == minHeight.get() || c.getY() == maxHeight.get();
+    }
+
+    /**
+     * Sets the dimensions.
+     *
+     * @param minW Potential new min width.
+     * @param minH Potential new min height.
+     * @param maxW Potential new max width.
+     * @param maxH Potential new max height.
+     */
+    protected void setDimensions(double minW, double minH, double maxW, double maxH) {
+        if(minW != minWidth.get()) {
+            minWidth.set(minW);
+        }
+        if(minH != minHeight.get()) {
+            minHeight.set(minH);
+        }
+        if(maxW != maxWidth.get()) {
+            maxWidth.set(maxW);
+        }
+        if(maxH != maxHeight.get()) {
+            maxHeight.set(maxH);
+        }
+    }
+
+    /**
+     * Update dimensions properties.
+     */
+    protected void updateDimensions() {
+        if(isEmpty()) {
+            setDimensions(0d, 0d, 0d, 0d);
+            return;
+        }
+
+        double minW = Double.MAX_VALUE;
+        double minH = Double.MAX_VALUE;
+        double maxW = Double.MIN_VALUE;
+        double maxH = Double.MIN_VALUE;
+        
+        outer:
+        for(var t : elements) {
+            for(var l : t) {
+                if(!l.isEmpty()) {
+                    for(var c : l) {
+                        minW = Math.min(minW, c.getX());
+                        minH = Math.min(minH, c.getY());
+                    }
+                    break outer;
+                }
+            }
+        }
+        
+        outer:
+        for(int i = elements.length - 1; i > -1; i--) {
+            for(int j = elements[i].length - 1; j > -1; j--) {
+                var l = elements[i][j];
+                if(!l.isEmpty()) {
+                    for(var c : l) {
+                        maxW = Math.max(maxW, c.getX());
+                        maxH = Math.max(maxH, c.getY());
+                    }
+                    break outer;
+                }
+            }
+        }
+
+        setDimensions(minW, minH, maxW, maxH);
+    }
+    
     /**
      * Ensures that the structure can correctly store the given coordinates.
      * 
@@ -533,7 +668,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         width++;
         height++;
 
-        if(width <= maxWidth.get() && height <= maxHeight.get()) {
+        if(width <= trueMaxWdith && height <= trueMaxHeight) {
             return;
         }
         
@@ -553,8 +688,8 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         rowRange = (int) newWidth / elements.length;
         colRange = (int) newHeight / elements[0].length;
         
-        maxWidth.set(newWidth);
-        maxHeight.set(newHeight);
+        trueMaxWdith = newWidth;
+        trueMaxHeight = newHeight;
     }
 
     /**
@@ -564,9 +699,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return {@code true} if yes; {@code false} otherwise.
      */
     private boolean resizeWidthOnRange(double newWidth) {
-        double actualMaxWidth = (double) elements.length * rowRange;
-        
-        if(newWidth <= actualMaxWidth) {
+        if(newWidth <= trueMaxWdith) {
             return false;
         }
 
@@ -584,9 +717,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return {@code true} if yes; {@code false} otherwise.
      */
     private boolean resizeHeightOnRange(double newHeight) {
-        double actualMaxHeight = (double) elements[0].length * colRange;
-
-        if(newHeight <= actualMaxHeight) {
+        if(newHeight <= trueMaxHeight) {
             return false;
         }
 
@@ -645,16 +776,18 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
 
         // fail fast 
         if(topLeftX >= bottomRightX || topLeftY >= bottomRightY
-            || topLeftX >= maxWidth.get() || topLeftY >= maxHeight.get()
+            || topLeftX >= getMaximumWidth() || topLeftY >= getMaximumHeight()
             || bottomRightX <= 0 || bottomRightY <= 0) {
             return l;
         }
         
-        int minI = Math.max((int) (topLeftX / maxWidth.get() * elements.length), 0);
-        int minJ = Math.max((int) (topLeftY / maxHeight.get() * elements[0].length), 0);
+        var p = indexesOf(topLeftX, topLeftY);
+        int minI = Math.max(0, (int) p.getX());
+        int minJ = Math.max(0, (int) p.getY());
 
-        int maxI = Math.min((int) (bottomRightX / maxWidth.get() * elements.length), elements.length);
-        int maxJ = Math.min((int) (bottomRightY / maxHeight.get() * elements[0].length), elements[0].length);
+        p = indexesOf(bottomRightX, bottomRightY);
+        int maxI = Math.min(elements.length, (int) p.getX());
+        int maxJ = Math.min(elements[0].length, (int) p.getY());
         
         for(int i = minI; i < maxI+1; i++) {
             for(int j = minJ; j < maxJ+1; j++) {
@@ -696,11 +829,13 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
             return l;
         }
 
-        int minI = Math.max((int) (topLeftX / maxWidth.get() * elements.length), 0);
-        int minJ = Math.max((int) (topLeftY / maxHeight.get() * elements[0].length), 0);
+        var p = indexesOf(topLeftX, topLeftY);
+        int minI = Math.max(0, (int) p.getX());
+        int minJ = Math.max(0, (int) p.getY());
 
-        int maxI = Math.min((int) (bottomRightX / maxWidth.get() * elements.length), elements.length);
-        int maxJ = Math.min((int) (bottomRightY / maxHeight.get() * elements[0].length), elements[0].length);
+        p = indexesOf(bottomRightX, bottomRightY);
+        int maxI = Math.min(elements.length, (int) p.getX());
+        int maxJ = Math.min(elements[0].length, (int) p.getY());
 
         for(int i = minI; i < maxI+1; i++) {
             for(int j = minJ; j < maxJ+1; j++) {
@@ -738,21 +873,21 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     /**
      * {@inheritDoc}
      *
-     * @return Max height property.
-     */
-    @Override
-    public ReadOnlyDoubleProperty maximumHeight() {
-        return maxHeight;
-    }
-
-    /** 
-     * {@inheritDoc}
-     *
      * @return Max width property.
      */
     @Override
     public ReadOnlyDoubleProperty maximumWidth() {
         return maxWidth;
+    }
+    
+    /**
+     * {@inheritDoc}
+     *
+     * @return Max height property.
+     */
+    @Override
+    public ReadOnlyDoubleProperty maximumHeight() {
+        return maxHeight;
     }
 
     /**

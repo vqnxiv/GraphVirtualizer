@@ -55,7 +55,7 @@ class CoordinatesMatrixTest {
     void initialLayout() {
         matrix = new CoordinatesMatrix<>(l, PojoLayout::new);
 
-        matrix.forEach(System.out::println);
+        // matrix.forEach(System.out::println);
         
         assertEquals(10d, matrix.getMinimumWidth());
         assertEquals(10d, matrix.getMinimumHeight());

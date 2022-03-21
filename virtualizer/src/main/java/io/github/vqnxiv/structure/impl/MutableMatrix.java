@@ -2,10 +2,19 @@ package io.github.vqnxiv.structure.impl;
 
 
 import io.github.vqnxiv.layout.Layout;
-import io.github.vqnxiv.structure.*;
+import io.github.vqnxiv.structure.CoordinatesElement;
+import io.github.vqnxiv.structure.CoordinatesIterator;
+import io.github.vqnxiv.structure.CoordinatesStructure;
+import io.github.vqnxiv.structure.LayoutableStructure;
+import io.github.vqnxiv.structure.MutableStructure;
+import io.github.vqnxiv.structure.StructureChange;
 import javafx.geometry.Point2D;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -188,7 +197,12 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      */
     @Override
     public boolean addAt(CoordinatesElement<E> element) {
-        return false;
+        if(!place(element)) {
+            return false;
+        }
+
+        fireAddEvent(List.of(element), element.getXY(), element.getXY());
+        return true;
     }
     
     /**
@@ -199,7 +213,30 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      */
     @Override
     public boolean addAllAt(Collection<CoordinatesElement<E>> coordinatesElements) {
-        return false;
+        var l = new ArrayList<CoordinatesElement<E>>(coordinatesElements.size());
+
+        double minX = Double.MAX_VALUE;
+        double minY = Double.MAX_VALUE;
+        double maxX = Double.MIN_VALUE;
+        double maxY = Double.MIN_VALUE;
+
+        for(var c : coordinatesElements) {
+            if(!place(c)) {
+                continue;
+            }
+            l.add(c);
+            minX = Math.min(minX, c.getX());
+            maxX = Math.max(maxX, c.getX());
+            minY = Math.min(minY, c.getY());
+            maxY = Math.max(maxY, c.getY());
+        }
+
+        if(l.isEmpty()) {
+            return false;
+        }
+        
+        fireAddEvent(l, new Point2D(minX, minY), new Point2D(maxX, maxY));
+        return true;
     }
     
     /**
@@ -210,7 +247,22 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      */
     @Override
     public boolean remove(E element) {
-        return false;
+        CoordinatesElement<E> c = null;
+        
+        for(var c2 : this) {
+            if(c2.getElement().equals(element)) {
+                c = c2;
+                break;
+            }
+        }
+        
+        if(c == null) {
+            return false;
+        }
+        
+        delete(c);
+        fireRmEvent(List.of(c), c.getXY(), c.getXY());
+        return true;
     }
 
     /**
@@ -221,7 +273,15 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      */
     @Override
     public boolean removeAll(Collection<E> elements) {
-        return false;
+        var l = new ArrayList<CoordinatesElement<E>>(elements.size());
+
+        for(var c : this) {
+            if(elements.contains(c.getElement())) {
+                l.add(c);
+            }
+        }
+
+        return !(l.isEmpty()) && removeAllAt(l);
     }
 
     /**
@@ -232,7 +292,12 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      */
     @Override
     public boolean removeAt(CoordinatesElement<E> element) {
-        return false;
+        if(!delete(element)) {
+            return false;
+        }
+
+        fireRmEvent(List.of(element), element.getXY(), element.getXY());
+        return true;
     }
 
     /**
@@ -243,7 +308,30 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      */
     @Override
     public boolean removeAllAt(Collection<CoordinatesElement<E>> coordinatesElements) {
-        return false;
+        var l = new ArrayList<CoordinatesElement<E>>(coordinatesElements.size());
+
+        double minX = Double.MAX_VALUE;
+        double minY = Double.MAX_VALUE;
+        double maxX = Double.MIN_VALUE;
+        double maxY = Double.MIN_VALUE;
+        
+        for(var c : coordinatesElements) {
+            if(!delete(c)) {
+                continue;
+            }
+            l.add(c);
+            minX = Math.min(minX, c.getX());
+            maxX = Math.max(maxX, c.getX());
+            minY = Math.min(minY, c.getY());
+            maxY = Math.max(maxY, c.getY());
+        }
+
+        if(l.isEmpty()) {
+            return false;
+        }
+
+        fireRmEvent(l, new Point2D(minX, minY), new Point2D(maxX, maxY));
+        return true;
     }
 
     /**
@@ -254,7 +342,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      */
     @Override
     public boolean removeIf(Predicate<E> condition) {
-        return false;
+        return removeCoordinatesIf(c -> condition.test(c.getElement()));
     }
 
     /**
@@ -265,7 +353,15 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      */
     @Override
     public boolean removeCoordinatesIf(Predicate<CoordinatesElement<E>> condition) {
-        return false;
+        var l = new ArrayList<CoordinatesElement<E>>();
+
+        for(var c : this) {
+            if(condition.test(c)) {
+                l.add(c);
+            }
+        }
+
+        return !(l.isEmpty()) && removeAllAt(l);
     }
 
     /**
@@ -275,7 +371,14 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      */
     @Override
     public boolean clear() {
-        return false;
+        var l = new ArrayList<CoordinatesElement<E>>(size());
+        var p1 = new Point2D(getMinimumWidth(), getMinimumHeight());
+        var p2 = new Point2D(getMaximumWidth(), getMaximumHeight());
+        
+        this.forEach(l::add);
+        emptyElements();
+        fireRmEvent(l, p1, p2);
+        return true;
     }
 
     
@@ -359,7 +462,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      */
     @Override
     public void addRemovalListener(Object owner, Consumer<? super StructureChange.Removal<E>> action) {
-        rmConsumers.computeIfAbsent(owner, p -> new ArrayList<>());
+        rmConsumers.computeIfAbsent(owner, o -> new ArrayList<>());
         rmConsumers.get(owner).add(action);
     }
 
@@ -402,5 +505,38 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
         return l;
     }
     
-    // todo: iterator
+    /**
+    * {@inheritDoc}
+    *
+    * @return an Iterator.
+    */
+    @Override
+    public CoordinatesIterator<CoordinatesElement<E>> iterator() {
+        return new RemoverIterator();
+    }
+
+    
+    /**
+     * Extension of {@link io.github.vqnxiv.structure.impl.LayoutableMatrix.LayoutableIterator}
+     * to support element removal.
+     */
+    protected class RemoverIterator extends LayoutableIterator {
+
+        /**
+         * Constructor.
+         */
+        protected RemoverIterator() {
+            super();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void remove() {
+            removeAt(getLast());
+            nullLast();
+            updateExpectedModCount();
+        }
+    }
 }

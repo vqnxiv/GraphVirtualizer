@@ -2,10 +2,19 @@ package io.github.vqnxiv.structure.impl;
 
 
 import io.github.vqnxiv.layout.Layout;
-import io.github.vqnxiv.structure.*;
+import io.github.vqnxiv.structure.CoordinatesElement;
+import io.github.vqnxiv.structure.CoordinatesIterator;
+import io.github.vqnxiv.structure.CoordinatesStructure;
+import io.github.vqnxiv.structure.LayoutableStructure;
+import io.github.vqnxiv.structure.MutableStructure;
+import io.github.vqnxiv.structure.StructureChange;
 import javafx.geometry.Point2D;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -123,20 +132,26 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
      */
     @Override
     public boolean remove(E element) {
-        CoordinatesElement<E> c;
-        for(int i = 0; i < elements().size(); i++) {
-            if((c = elements().get(i)).getElement().equals(element)) {
-                elements().remove(i);
-                if(isOnBound(c)) {
-                    updateDimensions();
-                }
-                modified();
-                fireRmEvent(List.of(c), c.getXY(), c.getXY());
-                return true;
+        CoordinatesElement<E> c = null;
+        int i = 0;
+        for(; i < elements().size(); i++) {
+            if(elements().get(i).getElement().equals(element)) {
+                c = elements().get(i);
+                break;
             }
         }
+
+        if(c == null) {
+            return false;
+        }
         
-        return false;
+        elements().remove(i);
+        if(isOnBound(c)) {
+            updateDimensions();
+        }
+        modified();
+        fireRmEvent(List.of(c), c.getXY(), c.getXY());
+        return true;
     }
 
     /**
@@ -148,39 +163,14 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
     @Override
     public boolean removeAll(Collection<E> elements) {
         var l = new ArrayList<CoordinatesElement<E>>(elements.size());
-
-        double minX = Double.MAX_VALUE;
-        double minY = Double.MAX_VALUE;
-        double maxX = Double.MIN_VALUE;
-        double maxY = Double.MIN_VALUE;
-        
-        boolean updateDimensions = false;
         
         for(var c : elements()) {
-            if(!elements.contains(c.getElement())) {
-                continue;
-            }
-            l.add(c);
-            minX = Math.min(minX, c.getX());
-            maxX = Math.max(maxX, c.getX());
-            minY = Math.min(minY, c.getY());
-            maxY = Math.max(maxY, c.getY());
-            if(isOnBound(c)) {
-                updateDimensions = true;
+            if(elements.contains(c.getElement())) {
+                l.add(c);
             }
         }
-        
-        if(l.isEmpty()) {
-            return false;
-        }
-        
-        elements().removeAll(l);
-        if(updateDimensions) {
-            updateDimensions();
-        }
-        modified();
-        fireRmEvent(l, new Point2D(minX, minY), new Point2D(maxX, maxY));
-        return true;
+
+        return !(l.isEmpty()) && removeAllAt(l);
     }
 
     /**
@@ -254,40 +244,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
      */
     @Override
     public boolean removeIf(Predicate<E> condition) {
-        var l = new ArrayList<CoordinatesElement<E>>();
-
-        double minX = Double.MAX_VALUE;
-        double minY = Double.MAX_VALUE;
-        double maxX = Double.MIN_VALUE;
-        double maxY = Double.MIN_VALUE;
-
-        boolean updateDimensions = false;
-        
-        for(var c : elements()) {
-            if(!condition.test(c.getElement())) {
-                continue;
-            }
-            l.add(c);
-            minX = Math.min(minX, c.getX());
-            maxX = Math.max(maxX, c.getX());
-            minY = Math.min(minY, c.getY());
-            maxY = Math.max(maxY, c.getY());
-            if(isOnBound(c)) {
-                updateDimensions = true;
-            }
-        }
-
-        if(l.isEmpty()) {
-            return false;
-        }
-
-        elements().removeAll(l);
-        if(updateDimensions) {
-            updateDimensions();
-        }
-        modified();
-        fireRmEvent(l, new Point2D(minX, minY), new Point2D(maxX, maxY));
-        return true;
+        return removeCoordinatesIf(c -> condition.test(c.getElement()));
     }
 
     /**
@@ -300,38 +257,13 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
     public boolean removeCoordinatesIf(Predicate<CoordinatesElement<E>> condition) {
         var l = new ArrayList<CoordinatesElement<E>>();
 
-        double minX = Double.MAX_VALUE;
-        double minY = Double.MAX_VALUE;
-        double maxX = Double.MIN_VALUE;
-        double maxY = Double.MIN_VALUE;
-
-        boolean updateDimensions = false;
-
         for(var c : elements()) {
-            if(!condition.test(c)) {
-                continue;
-            }
-            l.add(c);
-            minX = Math.min(minX, c.getX());
-            maxX = Math.max(maxX, c.getX());
-            minY = Math.min(minY, c.getY());
-            maxY = Math.max(maxY, c.getY());
-            if(isOnBound(c)) {
-                updateDimensions = true;
+            if(condition.test(c)) {
+                l.add(c);
             }
         }
-
-        if(l.isEmpty()) {
-            return false;
-        }
-
-        elements().removeAll(l);
-        if(updateDimensions) {
-            updateDimensions();
-        }
-        modified();
-        fireRmEvent(l, new Point2D(minX, minY), new Point2D(maxX, maxY));
-        return true;
+        
+        return !(l.isEmpty()) && removeAllAt(l);
     }
 
     /**
@@ -493,7 +425,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
      * Extension of {@link io.github.vqnxiv.structure.impl.LayoutableList.LayoutableIterator}
      * to support element removal.
      */
-    private class RemoverIterator extends LayoutableIterator {
+    protected class RemoverIterator extends LayoutableIterator {
         
         /**
          * Constructor.

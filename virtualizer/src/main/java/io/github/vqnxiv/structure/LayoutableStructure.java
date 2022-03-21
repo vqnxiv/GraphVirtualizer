@@ -1,7 +1,6 @@
 package io.github.vqnxiv.structure;
 
 
-import io.github.vqnxiv.structure.impl.LayoutableList;
 import javafx.geometry.Point2D;
 
 import java.util.Collection;
@@ -25,7 +24,7 @@ import java.util.function.Consumer;
  * @param <E> Type of elements.
  *           
  * @see CoordinatesStructure
- * @see LayoutableList
+ * @see io.github.vqnxiv.structure.impl.LayoutableList
  */
 public interface LayoutableStructure<E> extends CoordinatesStructure<E> {
 

@@ -2,10 +2,21 @@ package io.github.vqnxiv.structure.impl;
 
 
 import io.github.vqnxiv.layout.Layout;
-import io.github.vqnxiv.structure.*;
+import io.github.vqnxiv.structure.CoordinatesElement;
+import io.github.vqnxiv.structure.CoordinatesIterator;
+import io.github.vqnxiv.structure.CoordinatesStructure;
+import io.github.vqnxiv.structure.LayoutableStructure;
+import io.github.vqnxiv.structure.StructureChange;
 import javafx.geometry.Point2D;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -43,6 +54,7 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
     public LayoutableMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier) {
         super(el);
         layoutSupplier.apply(this).apply();
+        updateDimensions();
     }
 
     /**
@@ -356,12 +368,31 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
          */
         @Override
         public void reposition(double x, double y) {
+            if(last == null) {
+                throw new IllegalStateException();
+            }
             repositionTo(last, x, y);
             updateExpectedModCount();
             updateNext(true);
         }
 
 
+        /**
+         * Sets the the last element to null.
+         */
+        protected void nullLast() {
+            last = null;
+        }
+
+        /**
+         * Getter for the last seen element.
+         *
+         * @return The last seen element.
+         */
+        protected CoordinatesElement<E> getLast() {
+            return last;
+        }
+        
         /**
          * {@inheritDoc}
          * 

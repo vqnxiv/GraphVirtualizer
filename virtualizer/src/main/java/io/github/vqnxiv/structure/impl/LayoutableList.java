@@ -2,10 +2,20 @@ package io.github.vqnxiv.structure.impl;
 
 
 import io.github.vqnxiv.layout.Layout;
-import io.github.vqnxiv.structure.*;
+import io.github.vqnxiv.structure.CoordinatesElement;
+import io.github.vqnxiv.structure.CoordinatesIterator;
+import io.github.vqnxiv.structure.CoordinatesStructure;
+import io.github.vqnxiv.structure.LayoutableStructure;
+import io.github.vqnxiv.structure.StructureChange;
 import javafx.geometry.Point2D;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.ConcurrentModificationException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
