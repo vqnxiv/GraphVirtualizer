@@ -30,10 +30,10 @@ class MutableMatrixTest {
         assertNotEquals(0, size);
         
         var p = new Pojo("four");
-        matrix.add(p);
+        matrix.addValue(p);
         
         assertEquals(size + 1, matrix.size());
-        assertTrue(matrix.contains(p));
+        assertTrue(matrix.containsValue(p));
     }
 
     @Test
@@ -45,9 +45,9 @@ class MutableMatrixTest {
         var p3 = new Pojo("six");
         var l2 = List.of(p1, p2, p3);
         
-        matrix.addAll(l2);
+        matrix.addAllValues(l2);
         assertEquals(size + l2.size(), matrix.size());
-        l2.forEach(c -> assertTrue(matrix.contains(c)));
+        l2.forEach(c -> assertTrue(matrix.containsValue(c)));
     }
 
     @Test
@@ -56,11 +56,11 @@ class MutableMatrixTest {
         
         var p = new Pojo("four");
         var pC = new Point2D(500d, 500d);
-        matrix.addAt(p, pC);
+        matrix.addCoordinates(p, pC);
         
         assertEquals(size + 1, matrix.size());
-        assertTrue(matrix.contains(p));
-        assertTrue(matrix.contains(new CoordinatesElement<>(p, pC)));
+        assertTrue(matrix.containsValue(p));
+        assertTrue(matrix.containsCoordinates(new CoordinatesElement<>(p, pC)));
         assertEquals(pC, matrix.coordinatesOf(p).get().getXY());
     }
 
@@ -70,11 +70,11 @@ class MutableMatrixTest {
 
         var p = new Pojo("four");
         var pC = new Point2D(500d, 500d);
-        matrix.addAt(new CoordinatesElement<>(p, pC));
+        matrix.addCoordinates(new CoordinatesElement<>(p, pC));
 
         assertEquals(size + 1, matrix.size());
-        assertTrue(matrix.contains(p));
-        assertTrue(matrix.contains(new CoordinatesElement<>(p, pC)));
+        assertTrue(matrix.containsValue(p));
+        assertTrue(matrix.containsCoordinates(new CoordinatesElement<>(p, pC)));
         assertEquals(pC, matrix.coordinatesOf(p).get().getXY());
     }
 
@@ -91,11 +91,11 @@ class MutableMatrixTest {
             p3, new Point2D(30, 30)
         );
 
-        matrix.addAllAt(m);
+        matrix.addAllCoordinates(m);
         assertEquals(size + m.size(), matrix.size());
         m.forEach(
             (k, v) -> {
-                assertTrue(matrix.contains(k));
+                assertTrue(matrix.containsValue(k));
                 assertEquals(v, matrix.coordinatesOf(k).get().getXY());
             }
         );
@@ -119,15 +119,15 @@ class MutableMatrixTest {
             .map(e -> new CoordinatesElement<>(e.getKey(), e.getValue()))
             .toList();
         
-        matrix.addAllAt(l2);
+        matrix.addAllCoordinates(l2);
         assertEquals(size + m.size(), matrix.size());
         m.forEach(
             (k, v) -> {
-                assertTrue(matrix.contains(k));
+                assertTrue(matrix.containsValue(k));
                 assertEquals(v, matrix.coordinatesOf(k).get().getXY());
             }
         );
-        l2.forEach(c -> assertTrue(matrix.contains(c)));
+        l2.forEach(c -> assertTrue(matrix.containsCoordinates(c)));
     }
     
     
@@ -136,10 +136,10 @@ class MutableMatrixTest {
         int size = matrix.size();
         
         var p = new Pojo("one");
-        matrix.remove(p);
+        matrix.removeValue(p);
 
         assertEquals(size - 1, matrix.size());
-        assertFalse(matrix.contains(p));
+        assertFalse(matrix.containsValue(p));
     }
 
     @Test
@@ -151,9 +151,9 @@ class MutableMatrixTest {
         var p3 = new Pojo("three");
         var l2 = List.of(p1, p2, p3);
 
-        matrix.removeAll(l2);
+        matrix.removeAllValues(l2);
         assertEquals(size - l2.size(), matrix.size());
-        l2.forEach(c -> assertFalse(matrix.contains(c)));
+        l2.forEach(c -> assertFalse(matrix.containsValue(c)));
     }
 
     @Test
@@ -161,10 +161,10 @@ class MutableMatrixTest {
         var p = matrix.iterator().next();
 
         int size = matrix.size();
-        matrix.removeAt(p);
+        matrix.removeCoordinates(p);
 
         assertEquals(size - 1, matrix.size());
-        assertFalse(matrix.contains(p));
+        assertFalse(matrix.containsCoordinates(p));
     }
 
     @Test
@@ -173,36 +173,36 @@ class MutableMatrixTest {
         var l2 = List.of(itr.next(), itr.next());
 
         int size = matrix.size();
-        matrix.removeAllAt(l2);
+        matrix.removeAllCoordinates(l2);
 
         assertEquals(size - l2.size(), matrix.size());
-        l2.forEach(c -> assertFalse(matrix.contains(c)));
+        l2.forEach(c -> assertFalse(matrix.containsCoordinates(c)));
     }
 
     @Test
     void removeIf() {
-        matrix.removeIf(p -> p.name().equals("one"));
-        assertFalse(matrix.contains(new Pojo("one")));
+        matrix.removeValuesIf(p -> p.name().equals("one"));
+        assertFalse(matrix.containsValue(new Pojo("one")));
     }
 
     @Test
     void removeCoordinatesIf() {
         var p = new Pojo("one");
-        assertTrue(matrix.contains(p));
+        assertTrue(matrix.containsValue(p));
         matrix.removeCoordinatesIf(c -> c.getElement().equals(p));
-        assertFalse(matrix.contains(p));
+        assertFalse(matrix.containsValue(p));
     }
 
     @Test
     void clear() {
         assertFalse(matrix.isEmpty());
         assertNotEquals(0, matrix.size());
-        assertTrue(matrix.contains(new Pojo("one")));
+        assertTrue(matrix.containsValue(new Pojo("one")));
         
         matrix.clear();
         assertTrue(matrix.isEmpty());
         assertEquals(0, matrix.size());
-        assertFalse(matrix.contains(new Pojo("one")));
+        assertFalse(matrix.containsValue(new Pojo("one")));
         assertEquals(0d, matrix.getMinimumWidth());
         assertEquals(0d, matrix.getMinimumHeight());
         assertEquals(0d, matrix.getMaximumWidth());
@@ -223,14 +223,14 @@ class MutableMatrixTest {
         var p3 = itr.next();
         var p4 = new CoordinatesElement<>(new Pojo("four"), 100d, 80d);
         
-        matrix.addAt(p4);
+        matrix.addCoordinates(p4);
 
         assertEquals(0d, matrix.getMinimumWidth());
         assertEquals(0d, matrix.getMinimumHeight());
         assertEquals(100d, matrix.getMaximumWidth());
         assertEquals(80d, matrix.getMaximumHeight());
 
-        matrix.removeAllAt(List.of(p, p2, p3));
+        matrix.removeAllCoordinates(List.of(p, p2, p3));
 
         assertEquals(100d, matrix.getMinimumWidth());
         assertEquals(80d, matrix.getMinimumHeight());
@@ -242,17 +242,26 @@ class MutableMatrixTest {
     void removeThroughItr() {
         var itr = matrix.iterator();
         var p = itr.next();
-        assertTrue(matrix.contains(p));
+        assertTrue(matrix.containsCoordinates(p));
         itr.remove();
-        assertFalse(matrix.contains(p));
+        assertFalse(matrix.containsCoordinates(p));
+        assertDoesNotThrow(itr::next);
     }
     
     @Test
     void itrThrowsOnComod() {
         var itr = matrix.iterator();
         itr.next();
-        matrix.add(new Pojo("four"));
+        matrix.addValue(new Pojo("four"));
         assertThrows(ConcurrentModificationException.class, itr::next);
+    }
+    
+    @Test
+    void doubleItrRemoveThrows() {
+        var itr = matrix.iterator();
+        itr.next();
+        itr.remove();
+        assertThrows(IllegalStateException.class, itr::remove);
     }
 
     @Test
@@ -262,7 +271,7 @@ class MutableMatrixTest {
         
         var cp = new CoordinatesElement<>(new Pojo("four"), new Point2D(100d, 100d));
         var cp2 = new CoordinatesElement<>(new Pojo("four"), new Point2D(10d, 10d));
-        matrix.addAllAt(List.of(cp, cp2));
+        matrix.addAllCoordinates(List.of(cp, cp2));
 
         var m = aRef.get();
         assertEquals(matrix, m.structure());
@@ -295,7 +304,7 @@ class MutableMatrixTest {
             Math.max(p.getY(), p2.getY())
         );
         
-        matrix.removeAllAt(List.of(p, p2));
+        matrix.removeAllCoordinates(List.of(p, p2));
         
         var m = rRef.get();
         assertEquals(matrix, m.structure());

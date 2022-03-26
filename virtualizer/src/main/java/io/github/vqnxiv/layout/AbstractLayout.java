@@ -18,6 +18,16 @@ import javafx.beans.property.SimpleDoubleProperty;
 public abstract class AbstractLayout<E> implements Layout<E> {
 
     /**
+     * Minimum used width property.
+     */
+    protected final DoubleProperty minUsedWidth;
+
+    /**
+     * Minimum used height property.
+     */
+    protected final DoubleProperty minUsedHeight;
+    
+    /**
      * Maximum used width property.
      */
     protected final DoubleProperty maxUsedWidth;
@@ -40,10 +50,28 @@ public abstract class AbstractLayout<E> implements Layout<E> {
      */
     protected AbstractLayout(LayoutableStructure<E> s) {
         structure = s;
+        minUsedWidth = new SimpleDoubleProperty(0);
+        minUsedHeight = new SimpleDoubleProperty(0);
         maxUsedWidth = new SimpleDoubleProperty(0);
         maxUsedHeight = new SimpleDoubleProperty(0);
     }
 
+
+    /**
+     * Sets the used dimensions.
+     * 
+     * @param minWidth  Minimum used width.
+     * @param minHeight Minimum used height.
+     * @param maxWidth  Maximum used width.
+     * @param maxHeight Maximum used height.
+     */
+    protected void setUsedDimensions(double minWidth, double minHeight, double maxWidth, double maxHeight) {
+        minUsedWidth.set(minWidth);
+        minUsedHeight.set(minHeight);
+        maxUsedWidth.set(maxWidth);
+        maxUsedHeight.set(maxHeight);
+    }
+    
     
     /**
      * {@inheritDoc}
@@ -55,6 +83,26 @@ public abstract class AbstractLayout<E> implements Layout<E> {
         return structure;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @return Property of the minimum used width offset.
+     */
+    @Override
+    public ReadOnlyDoubleProperty minUsedWidth() {
+        return minUsedWidth;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return Property of the minimum used height offset.
+     */
+    @Override
+    public ReadOnlyDoubleProperty minUsedHeight() {
+        return minUsedHeight;
+    }
+    
     /**
      * {@inheritDoc}
      *

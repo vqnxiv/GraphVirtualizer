@@ -311,7 +311,7 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
      * @return {@code true} if this structure contains the specified element.
      */
     @Override
-    public boolean contains(CoordinatesElement<E> element) {
+    public boolean containsCoordinates(CoordinatesElement<E> element) {
         return elements.contains(element);
     }
 
@@ -374,6 +374,22 @@ public class CoordinatesList<E> implements CoordinatesStructure<E> {
     @Override
     public String toString() {
         return elements.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        
+        if(o instanceof CoordinatesList<?> cl) {
+            return elements.equals(cl.elements);
+        }
+        
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return elements != null ? elements.hashCode() : 0;
     }
     
 

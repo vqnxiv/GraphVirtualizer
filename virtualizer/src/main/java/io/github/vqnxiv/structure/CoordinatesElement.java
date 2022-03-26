@@ -194,6 +194,6 @@ public class CoordinatesElement<E> {
 
     @Override
     public String toString() {
-        return "(" + x + ", " + y + ") " + element.toString();
+        return String.format("(%.1f, %.1f) ", x, y) + element.toString();
     }
 }

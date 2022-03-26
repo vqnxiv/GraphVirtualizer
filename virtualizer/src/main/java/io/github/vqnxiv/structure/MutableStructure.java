@@ -26,8 +26,8 @@ public interface MutableStructure<E> extends LayoutableStructure<E> {
      * @param element The element to add.
      * @return {@code true} if it was successfully added.
      */
-    default boolean add(E element) {
-        return addAt(new CoordinatesElement<>(element));
+    default boolean addValue(E element) {
+        return addCoordinates(new CoordinatesElement<>(element));
     }
 
     /**
@@ -36,8 +36,8 @@ public interface MutableStructure<E> extends LayoutableStructure<E> {
      * @param elements The elements to add.
      * @return {@code true} if at least one element was successfully added.
      */
-    default boolean addAll(Collection<E> elements) {
-        return addAllAt(
+    default boolean addAllValues(Collection<E> elements) {
+        return addAllCoordinates(
             elements.stream().map(CoordinatesElement::new).toList()
         );
     }
@@ -51,8 +51,8 @@ public interface MutableStructure<E> extends LayoutableStructure<E> {
      * @param coordinates Its coordinates.
      * @return {@code true} if it was successfully added.
      */
-    default boolean addAt(E element, Point2D coordinates) {
-        return addAt(new CoordinatesElement<>(element, coordinates));
+    default boolean addCoordinates(E element, Point2D coordinates) {
+        return addCoordinates(new CoordinatesElement<>(element, coordinates));
     }
 
     /**
@@ -62,8 +62,8 @@ public interface MutableStructure<E> extends LayoutableStructure<E> {
      * @param element The element to add.
      * @return {@code true} if it was successfully added.
      */
-    default boolean addAt(CoordinatesElement<E> element) {
-        return addAllAt(List.of(element));
+    default boolean addCoordinates(CoordinatesElement<E> element) {
+        return addAllCoordinates(List.of(element));
     }
     
     /**
@@ -74,8 +74,8 @@ public interface MutableStructure<E> extends LayoutableStructure<E> {
      * @param elements The elements to add.
      * @return {@code true} if at least one element was successfully added.
      */
-    default boolean addAllAt(Map<E, Point2D> elements) {
-        return addAllAt(
+    default boolean addAllCoordinates(Map<E, Point2D> elements) {
+        return addAllCoordinates(
             elements
                 .entrySet()
                 .stream()
@@ -92,7 +92,7 @@ public interface MutableStructure<E> extends LayoutableStructure<E> {
      * @param elements The elements to add.
      * @return {@code true} if at least one element was successfully added.
      */
-    boolean addAllAt(Collection<CoordinatesElement<E>> elements);
+    boolean addAllCoordinates(Collection<CoordinatesElement<E>> elements);
 
     
     /**
@@ -101,7 +101,7 @@ public interface MutableStructure<E> extends LayoutableStructure<E> {
      * @param element The element to remove.
      * @return {@code true} if the element was successfully removed.
      */
-    boolean remove(E element);
+    boolean removeValue(E element);
 
     /**
      * Removes the given elements.
@@ -109,7 +109,7 @@ public interface MutableStructure<E> extends LayoutableStructure<E> {
      * @param elements The element to remove.
      * @return {@code true} if at least one element was successfully removed.
      */
-    boolean removeAll(Collection<E> elements);
+    boolean removeAllValues(Collection<E> elements);
 
     /**
      * Removes the given element.
@@ -117,7 +117,7 @@ public interface MutableStructure<E> extends LayoutableStructure<E> {
      * @param element The element to remove.
      * @return {@code true} if the element was successfully removed.
      */
-    boolean removeAt(CoordinatesElement<E> element);
+    boolean removeCoordinates(CoordinatesElement<E> element);
 
     /**
      * Removes the given elements.
@@ -125,7 +125,7 @@ public interface MutableStructure<E> extends LayoutableStructure<E> {
      * @param elements The element to remove.
      * @return {@code true} if at least one element was successfully removed.
      */
-    boolean removeAllAt(Collection<CoordinatesElement<E>> elements);
+    boolean removeAllCoordinates(Collection<CoordinatesElement<E>> elements);
 
     /**
      * Removes all the elements that match the given condition.
@@ -133,7 +133,7 @@ public interface MutableStructure<E> extends LayoutableStructure<E> {
      * @param condition Filtering condition.
      * @return {@code true} if at least one element was successfully removed.
      */
-    boolean removeIf(Predicate<E> condition);
+    boolean removeValuesIf(Predicate<? super E> condition);
 
     /**
      * Removes all the elements that match the given condition.
@@ -141,7 +141,7 @@ public interface MutableStructure<E> extends LayoutableStructure<E> {
      * @param condition Filtering condition.
      * @return {@code true} if at least one element was successfully removed.
      */
-    boolean removeCoordinatesIf(Predicate<CoordinatesElement<E>> condition);
+    boolean removeCoordinatesIf(Predicate<? super CoordinatesElement<E>> condition);
 
     /**
      * Clears the structure.

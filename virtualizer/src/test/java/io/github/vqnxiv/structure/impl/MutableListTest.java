@@ -29,10 +29,10 @@ class MutableListTest {
         assertNotEquals(0, size);
         
         var p = new Pojo("four");
-        cList.add(p);
+        cList.addValue(p);
         
         assertEquals(size + 1, cList.size());
-        assertTrue(cList.contains(p));
+        assertTrue(cList.containsValue(p));
     }
 
     @Test
@@ -44,9 +44,9 @@ class MutableListTest {
         var p3 = new Pojo("six");
         var l2 = List.of(p1, p2, p3);
         
-        cList.addAll(l2);
+        cList.addAllValues(l2);
         assertEquals(size + l2.size(), cList.size());
-        l2.forEach(c -> assertTrue(cList.contains(c)));
+        l2.forEach(c -> assertTrue(cList.containsValue(c)));
     }
 
     @Test
@@ -55,11 +55,11 @@ class MutableListTest {
         
         var p = new Pojo("four");
         var pC = new Point2D(500d, 500d);
-        cList.addAt(p, pC);
+        cList.addCoordinates(p, pC);
         
         assertEquals(size + 1, cList.size());
-        assertTrue(cList.contains(p));
-        assertTrue(cList.contains(new CoordinatesElement<>(p, pC)));
+        assertTrue(cList.containsValue(p));
+        assertTrue(cList.containsCoordinates(new CoordinatesElement<>(p, pC)));
         assertEquals(pC, cList.coordinatesOf(p).get().getXY());
     }
 
@@ -69,11 +69,11 @@ class MutableListTest {
 
         var p = new Pojo("four");
         var pC = new Point2D(500d, 500d);
-        cList.addAt(new CoordinatesElement<>(p, pC));
+        cList.addCoordinates(new CoordinatesElement<>(p, pC));
 
         assertEquals(size + 1, cList.size());
-        assertTrue(cList.contains(p));
-        assertTrue(cList.contains(new CoordinatesElement<>(p, pC)));
+        assertTrue(cList.containsValue(p));
+        assertTrue(cList.containsCoordinates(new CoordinatesElement<>(p, pC)));
         assertEquals(pC, cList.coordinatesOf(p).get().getXY());
     }
 
@@ -90,11 +90,11 @@ class MutableListTest {
             p3, new Point2D(30, 30)
         );
 
-        cList.addAllAt(m);
+        cList.addAllCoordinates(m);
         assertEquals(size + m.size(), cList.size());
         m.forEach(
             (k, v) -> {
-                assertTrue(cList.contains(k));
+                assertTrue(cList.containsValue(k));
                 assertEquals(v, cList.coordinatesOf(k).get().getXY());
             }
         );
@@ -118,15 +118,15 @@ class MutableListTest {
             .map(e -> new CoordinatesElement<>(e.getKey(), e.getValue()))
             .toList();
         
-        cList.addAllAt(l2);
+        cList.addAllCoordinates(l2);
         assertEquals(size + m.size(), cList.size());
         m.forEach(
             (k, v) -> {
-                assertTrue(cList.contains(k));
+                assertTrue(cList.containsValue(k));
                 assertEquals(v, cList.coordinatesOf(k).get().getXY());
             }
         );
-        l2.forEach(c -> assertTrue(cList.contains(c)));
+        l2.forEach(c -> assertTrue(cList.containsCoordinates(c)));
     }
     
     
@@ -135,10 +135,10 @@ class MutableListTest {
         int size = cList.size();
         
         var p = new Pojo("one");
-        cList.remove(p);
+        cList.removeValue(p);
 
         assertEquals(size - 1, cList.size());
-        assertFalse(cList.contains(p));
+        assertFalse(cList.containsValue(p));
     }
 
     @Test
@@ -150,9 +150,9 @@ class MutableListTest {
         var p3 = new Pojo("three");
         var l2 = List.of(p1, p2, p3);
 
-        cList.removeAll(l2);
+        cList.removeAllValues(l2);
         assertEquals(size - l2.size(), cList.size());
-        l2.forEach(c -> assertFalse(cList.contains(c)));
+        l2.forEach(c -> assertFalse(cList.containsValue(c)));
     }
 
     @Test
@@ -160,10 +160,10 @@ class MutableListTest {
         var p = cList.iterator().next();
 
         int size = cList.size();
-        cList.removeAt(p);
+        cList.removeCoordinates(p);
 
         assertEquals(size - 1, cList.size());
-        assertFalse(cList.contains(p));
+        assertFalse(cList.containsCoordinates(p));
     }
 
     @Test
@@ -172,36 +172,36 @@ class MutableListTest {
         var l2 = List.of(itr.next(), itr.next());
 
         int size = cList.size();
-        cList.removeAllAt(l2);
+        cList.removeAllCoordinates(l2);
 
         assertEquals(size - l2.size(), cList.size());
-        l2.forEach(c -> assertFalse(cList.contains(c)));
+        l2.forEach(c -> assertFalse(cList.containsCoordinates(c)));
     }
 
     @Test
     void removeIf() {
-        cList.removeIf(p -> p.name().equals("one"));
-        assertFalse(cList.contains(new Pojo("one")));
+        cList.removeValuesIf(p -> p.name().equals("one"));
+        assertFalse(cList.containsValue(new Pojo("one")));
     }
 
     @Test
     void removeCoordinatesIf() {
         var p = new Pojo("one");
-        assertTrue(cList.contains(p));
+        assertTrue(cList.containsValue(p));
         cList.removeCoordinatesIf(c -> c.getElement().equals(p));
-        assertFalse(cList.contains(p));
+        assertFalse(cList.containsValue(p));
     }
 
     @Test
     void clear() {
         assertFalse(cList.isEmpty());
         assertNotEquals(0, cList.size());
-        assertTrue(cList.contains(new Pojo("one")));
+        assertTrue(cList.containsValue(new Pojo("one")));
         
         cList.clear();
         assertTrue(cList.isEmpty());
         assertEquals(0, cList.size());
-        assertFalse(cList.contains(new Pojo("one")));
+        assertFalse(cList.containsValue(new Pojo("one")));
         assertEquals(0d, cList.getMinimumWidth());
         assertEquals(0d, cList.getMinimumHeight());
         assertEquals(0d, cList.getMaximumWidth());
@@ -222,14 +222,14 @@ class MutableListTest {
         var p3 = itr.next();
         var p4 = new CoordinatesElement<>(new Pojo("four"), 100d, 80d);
         
-        cList.addAt(p4);
+        cList.addCoordinates(p4);
 
         assertEquals(0d, cList.getMinimumWidth());
         assertEquals(0d, cList.getMinimumHeight());
         assertEquals(100d, cList.getMaximumWidth());
         assertEquals(80d, cList.getMaximumHeight());
 
-        cList.removeAllAt(List.of(p, p2, p3));
+        cList.removeAllCoordinates(List.of(p, p2, p3));
 
         assertEquals(100d, cList.getMinimumWidth());
         assertEquals(80d, cList.getMinimumHeight());
@@ -241,16 +241,16 @@ class MutableListTest {
     void removeThroughItr() {
         var itr = cList.iterator();
         var p = itr.next();
-        assertTrue(cList.contains(p));
+        assertTrue(cList.containsCoordinates(p));
         itr.remove();
-        assertFalse(cList.contains(p));
+        assertFalse(cList.containsCoordinates(p));
     }
     
     @Test
     void itrThrowsOnComod() {
         var itr = cList.iterator();
         itr.next();
-        cList.add(new Pojo("four"));
+        cList.addValue(new Pojo("four"));
         assertThrows(ConcurrentModificationException.class, itr::next);
     }
 
@@ -261,7 +261,7 @@ class MutableListTest {
         
         var cp = new CoordinatesElement<>(new Pojo("four"), new Point2D(100d, 100d));
         var cp2 = new CoordinatesElement<>(new Pojo("four"), new Point2D(10d, 10d));
-        cList.addAllAt(List.of(cp, cp2));
+        cList.addAllCoordinates(List.of(cp, cp2));
 
         var m = aRef.get();
         assertEquals(cList, m.structure());
@@ -294,7 +294,7 @@ class MutableListTest {
             Math.max(p.getY(), p2.getY())
         );
         
-        cList.removeAllAt(List.of(p, p2));
+        cList.removeAllCoordinates(List.of(p, p2));
         
         var m = rRef.get();
         assertEquals(cList, m.structure());

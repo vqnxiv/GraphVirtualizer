@@ -71,8 +71,11 @@ class LayoutableMatrixTest {
     void canRepositionThroughItr() {
         var itr = matrix.iterator();
         // System.out.println(matrix);
-        itr.next();
+        var p = itr.next();
         assertDoesNotThrow(() -> itr.reposition(500d, 500d));
+        assertTrue(p.getX() == 500d && p.getY() == 500d);
+        assertDoesNotThrow(() -> itr.reposition(600d, 500d));
+        assertTrue(p.getX() == 600d && p.getY() == 500d);
         // System.out.println(matrix);
         assertDoesNotThrow(itr::next);
     }

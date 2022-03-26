@@ -77,7 +77,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
      * @return {@code true} if it was successfully added.
      */
     @Override
-    public boolean addAt(CoordinatesElement<E> element) {
+    public boolean addCoordinates(CoordinatesElement<E> element) {
         if(!elements().add(element)) {
             return false;
         }
@@ -95,7 +95,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
      * @return {@code true} if at least one element was successfully added.
      */
     @Override
-    public boolean addAllAt(Collection<CoordinatesElement<E>> coordinatesElements) {
+    public boolean addAllCoordinates(Collection<CoordinatesElement<E>> coordinatesElements) {
         var l = new ArrayList<CoordinatesElement<E>>(coordinatesElements.size());
 
         double minX = Double.MAX_VALUE;
@@ -131,7 +131,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
      * @return {@code true} if the element was successfully removed.
      */
     @Override
-    public boolean remove(E element) {
+    public boolean removeValue(E element) {
         CoordinatesElement<E> c = null;
         int i = 0;
         for(; i < elements().size(); i++) {
@@ -161,7 +161,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
      * @return {@code true} if at least one element was successfully removed.
      */
     @Override
-    public boolean removeAll(Collection<E> elements) {
+    public boolean removeAllValues(Collection<E> elements) {
         var l = new ArrayList<CoordinatesElement<E>>(elements.size());
         
         for(var c : elements()) {
@@ -170,7 +170,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
             }
         }
 
-        return !(l.isEmpty()) && removeAllAt(l);
+        return !(l.isEmpty()) && removeAllCoordinates(l);
     }
 
     /**
@@ -180,7 +180,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
      * @return {@code true} if the element was successfully removed.
      */
     @Override
-    public boolean removeAt(CoordinatesElement<E> element) {
+    public boolean removeCoordinates(CoordinatesElement<E> element) {
         if(!elements().remove(element)) {
             return false;
         }
@@ -200,7 +200,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
      * @return {@code true} if at least one element was successfully removed.
      */
     @Override
-    public boolean removeAllAt(Collection<CoordinatesElement<E>> coordinatesElements) {
+    public boolean removeAllCoordinates(Collection<CoordinatesElement<E>> coordinatesElements) {
         var l = new ArrayList<CoordinatesElement<E>>(coordinatesElements.size());
 
         double minX = Double.MAX_VALUE;
@@ -243,7 +243,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
      * @return {@code true} if at least one element was successfully removed.
      */
     @Override
-    public boolean removeIf(Predicate<E> condition) {
+    public boolean removeValuesIf(Predicate<? super E> condition) {
         return removeCoordinatesIf(c -> condition.test(c.getElement()));
     }
 
@@ -254,7 +254,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
      * @return {@code true} if at least one element was successfully removed.
      */
     @Override
-    public boolean removeCoordinatesIf(Predicate<CoordinatesElement<E>> condition) {
+    public boolean removeCoordinatesIf(Predicate<? super CoordinatesElement<E>> condition) {
         var l = new ArrayList<CoordinatesElement<E>>();
 
         for(var c : elements()) {
@@ -263,7 +263,7 @@ public class MutableList<E> extends LayoutableList<E> implements MutableStructur
             }
         }
         
-        return !(l.isEmpty()) && removeAllAt(l);
+        return !(l.isEmpty()) && removeAllCoordinates(l);
     }
 
     /**

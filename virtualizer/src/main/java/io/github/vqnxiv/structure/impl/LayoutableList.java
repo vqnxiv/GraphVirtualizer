@@ -247,8 +247,8 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
     public CoordinatesIterator<CoordinatesElement<E>> iterator() {
         return new LayoutableIterator();
     }
-    
-    
+
+
     /**
      * Extension of {@link io.github.vqnxiv.structure.impl.CoordinatesList.CoordsListIterator}
      * to support repositioning elements.

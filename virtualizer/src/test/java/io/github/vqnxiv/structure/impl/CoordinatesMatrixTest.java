@@ -99,9 +99,9 @@ class CoordinatesMatrixTest {
         var c2 = new CoordinatesElement<>(c);
         c2.setX(c.getX() / 2);
 
-        assertTrue(matrix.contains(c));
-        assertTrue(matrix.contains(c2.getElement()));
-        assertFalse(matrix.contains(c2));
+        assertTrue(matrix.containsCoordinates(c));
+        assertTrue(matrix.containsValue(c2.getElement()));
+        assertFalse(matrix.containsCoordinates(c2));
     }
     
 }

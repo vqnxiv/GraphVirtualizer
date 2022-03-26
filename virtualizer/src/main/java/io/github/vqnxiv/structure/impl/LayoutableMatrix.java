@@ -30,10 +30,82 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
 
 
     /**
+     * Layoutable matrix where {@link #repositionAllTo(Map)}) doesn't check
+     * whether the structure already contains the elements.
+     * 
+     * It is only used for faster repositioning when creating a new matrix
+     * with a layout (as all the elements will likely be placed in the [0][0]
+     * collection so {@code contains} checks can be quite time consuming).
+     * 
+     * @param <E> Type of elements.
+     */
+    protected static final class UncheckedLayoutableMatrix<E> extends LayoutableMatrix<E> {
+
+        /**
+         * Layout constructor.
+         *
+         * @param el             Elements.
+         * @param layoutSupplier Initial layout.
+         */
+        public UncheckedLayoutableMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier) {
+            super(el);
+            layoutSupplier.apply(this).apply();
+        }
+
+        /**
+         * Layout constructor.
+         *
+         * @param el                  Elements.
+         * @param layoutSupplier      Initial layout.
+         * @param initialWidth        Width.
+         * @param initialHeight       Height.
+         * @param initialRowNumber    Row number.
+         * @param initialColNumber    Column number.
+         * @param maxRowRangeIncrease Maximum row range increase.
+         * @param maxColRangeIncrease Maximum column range increase.
+         * @param maxRowNumber        Maximum rows.
+         * @param maxColNumber        Maximum columns.
+         */
+        public UncheckedLayoutableMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier, 
+                                         double initialWidth, double initialHeight, 
+                                         int initialRowNumber, int initialColNumber, 
+                                         float maxRowRangeIncrease, float maxColRangeIncrease, 
+                                         int maxRowNumber, int maxColNumber) {
+            super(
+                el, 
+                initialWidth, initialHeight, 
+                initialRowNumber, initialColNumber, 
+                maxRowRangeIncrease, maxColRangeIncrease, 
+                maxRowNumber, maxColNumber
+            );
+        }
+        
+
+        /**
+         * {@inheritDoc}
+         *
+         * @param m Elements with their old coordinates mapped to
+         *          their new coordinates.
+         */
+        @Override
+        public void repositionAllTo(Map<CoordinatesElement<E>, Point2D> m) {
+            emptyElements();
+            m.forEach(
+                (k, v) -> {
+                    k.setXY(v);
+                    place(k);
+                }
+            );
+
+            updateDimensions();
+        }
+    }  
+    
+    
+    /**
      * On event consumers. 
      */
     private final Map<Object, List<Consumer<? super StructureChange.Move<E>>>> consumers = new HashMap<>();
-
 
 
     /**
@@ -46,15 +118,13 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
     }
 
     /**
-     * Constructor.
-     * 
-     * @param el             Elements
+     * Layout constructor.
+     *
+     * @param el             Elements.
      * @param layoutSupplier Initial layout.
      */
     public LayoutableMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier) {
-        super(el);
-        layoutSupplier.apply(this).apply();
-        updateDimensions();
+        super(el, layoutSupplier);
     }
 
     /**
@@ -88,16 +158,16 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
      * @param maxRowNumber        Maximum rows.
      * @param maxColNumber        Maximum columns.
      */
-    public LayoutableMatrix(Collection<E> el,
-                            double initialWidth, double initialHeight,
-                            int initialRowNumber, int initialColNumber,
-                            float maxRowRangeIncrease, float maxColRangeIncrease,
+    public LayoutableMatrix(Collection<E> el, 
+                            double initialWidth, double initialHeight, 
+                            int initialRowNumber, int initialColNumber, 
+                            float maxRowRangeIncrease, float maxColRangeIncrease, 
                             int maxRowNumber, int maxColNumber) {
         super(
-            el,
-            initialWidth, initialHeight,
-            initialRowNumber, initialColNumber,
-            maxRowRangeIncrease, maxColRangeIncrease,
+            el, 
+            initialWidth, initialHeight, 
+            initialRowNumber, initialColNumber, 
+            maxRowRangeIncrease, maxColRangeIncrease, 
             maxRowNumber, maxColNumber
         );
     }
@@ -116,80 +186,49 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
      * @param maxColNumber        Maximum columns.
      */
     public LayoutableMatrix(CoordinatesStructure<E> el,
+                            double initialWidth, double initialHeight, 
+                            int initialRowNumber, int initialColNumber, 
+                            float maxRowRangeIncrease, float maxColRangeIncrease, 
+                            int maxRowNumber, int maxColNumber) {
+        super(
+            el, 
+            initialWidth, initialHeight, 
+            initialRowNumber, initialColNumber, 
+            maxRowRangeIncrease, maxColRangeIncrease, 
+            maxRowNumber, maxColNumber
+        );
+    }
+
+    /**
+     * Layout constructor.
+     *
+     * @param el                  Elements.
+     * @param layoutSupplier      Initial layout.
+     * @param initialWidth        Width.
+     * @param initialHeight       Height.
+     * @param initialRowNumber    Row number.
+     * @param initialColNumber    Column number.
+     * @param maxRowRangeIncrease Maximum row range increase.
+     * @param maxColRangeIncrease Maximum column range increase.
+     * @param maxRowNumber        Maximum rows.
+     * @param maxColNumber        Maximum columns.
+     */
+    public LayoutableMatrix(Collection<E> el, 
+                            Function<LayoutableStructure<E>, Layout<E>> layoutSupplier, 
                             double initialWidth, double initialHeight,
-                            int initialRowNumber, int initialColNumber,
-                            float maxRowRangeIncrease, float maxColRangeIncrease,
-                            int maxRowNumber, int maxColNumber) {
-        super(
-            el,
-            initialWidth, initialHeight,
-            initialRowNumber, initialColNumber,
-            maxRowRangeIncrease, maxColRangeIncrease,
-            maxRowNumber, maxColNumber
-        );
-    }
-    
-    /**
-     * Constructor.
-     *
-     * @param el                  Elements.
-     * @param layoutSupplier      Initial layout.
-     * @param initialWidth        Width.
-     * @param initialHeight       Height.
-     * @param initialRowNumber    Row number.
-     * @param initialColNumber    Column number.
-     * @param maxRowRangeIncrease Maximum row range increase.
-     * @param maxColRangeIncrease Maximum column range increase.
-     * @param maxRowNumber        Maximum rows.
-     * @param maxColNumber        Maximum columns.
-     */
-    public LayoutableMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier, 
-                            double initialWidth, double initialHeight, 
                             int initialRowNumber, int initialColNumber, 
                             float maxRowRangeIncrease, float maxColRangeIncrease, 
                             int maxRowNumber, int maxColNumber) {
         super(
-            el,
+            el, layoutSupplier, 
             initialWidth, initialHeight, 
             initialRowNumber, initialColNumber, 
             maxRowRangeIncrease, maxColRangeIncrease, 
             maxRowNumber, maxColNumber
         );
-
-        layoutSupplier.apply(this).apply();
     }
 
-    /**
-     * Constructor.
-     *
-     * @param el                  Elements.
-     * @param layoutSupplier      Initial layout.
-     * @param initialWidth        Width.
-     * @param initialHeight       Height.
-     * @param initialRowNumber    Row number.
-     * @param initialColNumber    Column number.
-     * @param maxRowRangeIncrease Maximum row range increase.
-     * @param maxColRangeIncrease Maximum column range increase.
-     * @param maxRowNumber        Maximum rows.
-     * @param maxColNumber        Maximum columns.
-     */
-    public LayoutableMatrix(CoordinatesStructure<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier, 
-                            double initialWidth, double initialHeight, 
-                            int initialRowNumber, int initialColNumber, 
-                            float maxRowRangeIncrease, float maxColRangeIncrease, 
-                            int maxRowNumber, int maxColNumber) {
-        super(
-            el,
-            initialWidth, initialHeight, 
-            initialRowNumber, initialColNumber, 
-            maxRowRangeIncrease, maxColRangeIncrease, 
-            maxRowNumber, maxColNumber
-        );
-        
-        layoutSupplier.apply(this).apply();
-    }
     
-
     /**
      * {@inheritDoc}
      *
@@ -334,18 +373,40 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
         private final Set<CoordinatesElement<E>> visited;
 
         /**
-         * Last seen element.
+         * Last seen element. {@code null} if {@link #reposition(double, double)}
+         * or {@link #remove()} were called.
          */
         private CoordinatesElement<E> last;
 
+        /**
+         * Next element. {@code null} if no more next elements.
+         */
+        private CoordinatesElement<E> next;
+        
         
         /**
          * Constructor.
          */
         protected LayoutableIterator() {
+            super();
             visited = new HashSet<>();
+            
+            // if(super.hasNext()) {
+            //     next = super.next();
+            // }
         }
 
+
+        /**
+         * {@inheritDoc}
+         *
+         * @return {@code true} if the iteration has more elements
+         */
+        @Override
+        public boolean hasNext() {
+            // return next != null;
+            return super.hasNext();
+        }
 
         /**
          * {@inheritDoc}
@@ -355,8 +416,18 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
          */
         @Override
         public CoordinatesElement<E> next() {
+            // if(next == null) {
+            //     throw new NoSuchElementException();
+            // }
+            
+            // last = next;
+            // visited.add(last);
+            
+            // while(visited.contains(next) && next != null) {
+            //     next = (super.hasNext()) ? super.next() : null;
+            // }
             last = super.next();
-            visited.add(last);
+            
             return last;
         }
 
@@ -371,9 +442,19 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
             if(last == null) {
                 throw new IllegalStateException();
             }
+            
+            /*
+            var cp = new CoordinatesElement<>(last);
+            last.setXY(x, y);
+            place(last);
+            
+            var pTL = new Point2D(Math.min(cp.getX(), x), Math.min(cp.getY(), y));
+            var pBR = new Point2D(Math.max(cp.getX(), x), Math.max(cp.getY(), y));
+            fireMoveEvent(Map.of(cp, last.getXY()), pTL, pBR);
+            */
+            
             repositionTo(last, x, y);
             updateExpectedModCount();
-            updateNext(true);
         }
 
 
@@ -391,30 +472,6 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
          */
         protected CoordinatesElement<E> getLast() {
             return last;
-        }
-        
-        /**
-         * {@inheritDoc}
-         * 
-         * @param ignored Ignored.
-         */
-        @Override
-        protected void updateNext(boolean ignored) {
-            while(!hasReachedTheEnd() && !isCurrentNextValid()) {
-                super.updateNext(true);
-            }
-        }
-
-        /**
-         * Checks whether there is a next element and if it is valid (i.e non visited).
-         * 
-         * @return {@code true} if the next element is valid; {@code false} otherwise.
-         */
-        private boolean isCurrentNextValid() {
-            return getPotentialNext().isPresent() 
-                && (visited == null
-                || !visited.contains(getPotentialNext().orElse(null))
-            );
         }
     }
 }

@@ -72,8 +72,8 @@ class CoordinatesListTest {
         var c2 = new CoordinatesElement<>(c);
         c2.setX(c.getX() / 2);
    
-        assertTrue(cList.contains(c));
-        assertTrue(cList.contains(c2.getElement()));
-        assertFalse(cList.contains(c2));
+        assertTrue(cList.containsCoordinates(c));
+        assertTrue(cList.containsValue(c2.getElement()));
+        assertFalse(cList.containsCoordinates(c2));
     }
 }

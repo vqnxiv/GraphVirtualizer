@@ -16,6 +16,8 @@ public interface CoordinatesIterator<E> extends Iterator<E> {
 
     /**
      * Repositions the last element returned this iterator (optional operation).
+     * Calling this method after calling {@link Iterator#remove()} will result
+     * in a {@link IllegalStateException}.
      * 
      * @param x New X coordinate.
      * @param y New Y coordinate.
@@ -26,7 +28,9 @@ public interface CoordinatesIterator<E> extends Iterator<E> {
 
     /**
      * Repositions the last element returned this iterator (optional operation).
-     * 
+     * Calling this method after calling {@link Iterator#remove()} will result
+     * in a {@link IllegalStateException}.
+     *      
      * @param p New X/Y coordinates.
      */
     default void reposition(Point2D p) {

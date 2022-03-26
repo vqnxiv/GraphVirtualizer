@@ -18,6 +18,16 @@ import javafx.beans.property.SimpleDoubleProperty;
 public abstract class AbstractConstrainedLayout<E> extends AbstractLayout<E> implements ConstrainedLayout<E> {
 
     /**
+     * Minimum allowed width property.
+     */
+    protected final DoubleProperty minAllowedWidth;
+
+    /**
+     * Minimum allowed height property.
+     */
+    protected final DoubleProperty minAllowedHeight;
+    
+    /**
      * Maximum allowed width property.
      */
     protected final DoubleProperty maxAllowedWidth;
@@ -34,22 +44,48 @@ public abstract class AbstractConstrainedLayout<E> extends AbstractLayout<E> imp
      * @param s Structure.
      */
     protected AbstractConstrainedLayout(LayoutableStructure<E> s) {
-        this(s, Double.MAX_VALUE, Double.MAX_VALUE);
+        this(s, 0d, 0d, Double.MAX_VALUE, Double.MAX_VALUE);
     }
 
     /**
      * Constructor.
      * 
      * @param s Structure.
+     * @param minWidth  Initial minimum allowed width.
+     * @param minHeight Initial minimum allowed height.
      * @param maxWidth  Initial maximum allowed width.
      * @param maxHeight Initial maximum allowed height.
      */
-    protected AbstractConstrainedLayout(LayoutableStructure<E> s, double maxWidth, double maxHeight) {
+    protected AbstractConstrainedLayout(LayoutableStructure<E> s,
+                                        double minWidth, double minHeight,
+                                        double maxWidth, double maxHeight) {
         super(s);
+        minAllowedWidth = new SimpleDoubleProperty(minWidth);
+        minAllowedHeight = new SimpleDoubleProperty(minHeight);
         maxAllowedWidth = new SimpleDoubleProperty(maxWidth);
         maxAllowedHeight = new SimpleDoubleProperty(maxHeight);
     }
-    
+
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return Property of the minimum allowed width offset.
+     */
+    @Override
+    public DoubleProperty minAllowedWidth() {
+        return minAllowedWidth;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return Property of the minimum allowed height offset.
+     */
+    @Override
+    public DoubleProperty minAllowedHeight() {
+        return minAllowedHeight;
+    }
     
     /**
      * {@inheritDoc}

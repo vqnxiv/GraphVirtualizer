@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -127,7 +128,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     /**
      * The elements.
      */
-    private List<CoordinatesElement<E>>[][] elements;
+    private Collection<CoordinatesElement<E>>[][] elements;
     
     /**
      * Current row range.
@@ -198,16 +199,13 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * Number of elements.
      */
     private int size;
-    
+
 
     /**
-     * Constructor.
-     *
-     * @param el Elements.
+     * Default values fields setter constructor.
      */
-    public CoordinatesMatrix(Collection<E> el) {
+    private CoordinatesMatrix() {
         this(
-            el,
             DEFAULT_MAX_WIDTH, DEFAULT_MAX_HEIGHT,
             DEFAULT_ROW_NUMBER, DEFAULT_COL_NUMBER,
             DEFAULT_MAX_WIDTH_INCREASE, DEFAULT_MAX_HEIGHT_INCREASE,
@@ -216,12 +214,91 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     }
 
     /**
+     * Custom values fields setter constructor.
+     */
+    @SuppressWarnings("unchecked")
+    private CoordinatesMatrix(double initialWidth, double initialHeight,
+                              int initialRowNumber, int initialColNumber,
+                              float maxRowRangeIncrease, float maxColRangeIncrease,
+                              int maxRowNumber, int maxColNumber) {
+
+        if(initialWidth < 0 || initialHeight < 0
+            || initialRowNumber < 1 || initialColNumber < 1
+            || maxRowRangeIncrease < 1.0 || maxColRangeIncrease < 1.0
+            || maxRowNumber < initialRowNumber || maxColNumber < initialColNumber) {
+            throw new IllegalArgumentException();
+        }
+
+        this.maxRowRangeIncrease = maxRowRangeIncrease;
+        this.maxColRangeIncrease = maxColRangeIncrease;
+
+        this.maxRowNumber = maxRowNumber;
+        this.maxColNumber = maxColNumber;
+
+        trueMaxWdith = initialWidth;
+        trueMaxHeight = initialHeight;
+
+        minWidth.set(0);
+        minHeight.set(0);
+        maxWidth.set(0);
+        maxHeight.set(0);
+
+        rowRange = (int) (maxWidth.get() / initialRowNumber);
+        colRange = (int) (maxHeight.get() / initialColNumber);
+
+        elements = (Collection<CoordinatesElement<E>>[][]) Array.newInstance(
+            ArrayList.class, initialRowNumber, initialColNumber
+        );
+        
+        for(var t : elements) {
+            for(int i = 0; i < t.length; i++) {
+                t[i] = new ArrayList<>();
+            }
+        }
+    }
+
+    /**
+     * Shallow copy constructor.
+     * 
+     * @param m       Matrix to copy.
+     * @param ignored Ignored.
+     */
+    private CoordinatesMatrix(CoordinatesMatrix<E> m, boolean ignored) {
+        elements = m.elements;
+        minWidth.set(m.getMinimumWidth());
+        minHeight.set(m.getMinimumHeight());
+        maxWidth.set(m.getMaximumWidth());
+        maxHeight.set(m.getMaximumHeight());
+        trueMaxWdith = m.trueMaxWdith;
+        trueMaxHeight = m.trueMaxHeight;
+        rowRange = m.rowRange;
+        colRange = m.colRange;
+        maxRowRangeIncrease = m.maxRowRangeIncrease;
+        maxColRangeIncrease = m.maxColRangeIncrease;
+        maxRowNumber = m.maxRowNumber;
+        maxColNumber = m.maxColNumber;
+        size = m.size;
+    }
+
+
+    /**
+     * Constructor.
+     *
+     * @param el Elements.
+     */
+    public CoordinatesMatrix(Collection<E> el) {
+        this();
+        el.forEach(e -> place(new CoordinatesElement<>(e)));
+    }
+
+    /**
+     * Layout constructor.
      * 
      * @param el Elements.
      * @param layoutSupplier Initial layout.
      */
     public CoordinatesMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier) {
-        this(new LayoutableMatrix<>(el, layoutSupplier));
+        this(new LayoutableMatrix.UncheckedLayoutableMatrix<>(el, layoutSupplier), true);
     }
     
     /**
@@ -230,13 +307,11 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @param c Structure to copy.
      */
     public CoordinatesMatrix(CoordinatesStructure<E> c) {
-        this(
-            c,
-            c.getMaximumWidth(), c.getMaximumHeight(),
-            DEFAULT_ROW_NUMBER, DEFAULT_COL_NUMBER,
-            DEFAULT_MAX_WIDTH_INCREASE, DEFAULT_MAX_HEIGHT_INCREASE,
-            DEFAULT_MAX_ROW_NUMBER, DEFAULT_MAX_COL_NUMBER
-        );
+        this();
+        
+        c.forEach(this::place);
+        minWidth.set(c.getMinimumWidth());
+        minHeight.set(c.getMinimumHeight());
     }
 
     /**
@@ -246,12 +321,15 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      */
     public CoordinatesMatrix(CoordinatesMatrix<E> m) {
         this(
-            m,
             m.trueMaxWdith, m.trueMaxHeight,
             m.elements.length, m.elements[0].length,
             m.maxRowRangeIncrease, m.maxColRangeIncrease,
             m.maxRowNumber, m.maxColNumber
         );
+        
+        m.forEach(this::place);
+        minWidth.set(m.getMinimumWidth());
+        minHeight.set(m.getMinimumHeight());
     }
     
     /**
@@ -267,50 +345,20 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @param maxRowNumber        Maximum rows.
      * @param maxColNumber        Maximum columns.
      */
-    @SuppressWarnings("unchecked")
     public CoordinatesMatrix(Collection<E> el,
                              double initialWidth, double initialHeight,
                              int initialRowNumber, int initialColNumber,
                              float maxRowRangeIncrease, float maxColRangeIncrease,
                              int maxRowNumber, int maxColNumber) {
 
-        if(initialWidth < 0 || initialHeight < 0
-            || initialRowNumber < 1 || initialColNumber < 1
-            || maxRowRangeIncrease < 1.0 || maxColRangeIncrease < 1.0
-            || maxRowNumber < initialRowNumber || maxColNumber < initialColNumber) {
-            throw new IllegalArgumentException();
-        }
-
-        this.maxRowRangeIncrease = maxRowRangeIncrease;
-        this.maxColRangeIncrease = maxColRangeIncrease;
-
-        this.maxRowNumber = maxRowNumber;
-        this.maxColNumber = maxColNumber;
-
-        elements = (List<CoordinatesElement<E>>[][]) Array.newInstance(List.class, initialRowNumber, initialColNumber);
-
-        for(var t : elements) {
-            for(int i = 0; i < t.length; i++) {
-                t[i] = new ArrayList<>();
-            }
-        }
+        this(
+            initialWidth, initialHeight,
+            initialRowNumber, initialColNumber,
+            maxRowRangeIncrease, maxColRangeIncrease,
+            maxRowNumber, maxColNumber
+        );
         
-        trueMaxWdith = initialWidth;
-        trueMaxHeight = initialHeight;
-
-        minWidth.set(0);
-        minHeight.set(0);
-        maxWidth.set(0);
-        maxHeight.set(0);
-
-        rowRange = (int) (maxWidth.get() / initialRowNumber);
-        colRange = (int) (maxHeight.get() / initialColNumber);
-
-        for(E e : el) {
-            elements[0][0].add(new CoordinatesElement<>(e));
-        }
-        
-        size = el.size();
+        el.forEach(e -> place(new CoordinatesElement<>(e)));
     }
 
     /**
@@ -332,26 +380,19 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
                              float maxRowRangeIncrease, float maxColRangeIncrease,
                              int maxRowNumber, int maxColNumber) {
         this(
-            List.of(),
             initialWidth, initialHeight,
             initialRowNumber, initialColNumber,
             maxRowRangeIncrease, maxColRangeIncrease,
             maxRowNumber, maxColNumber
         );
-        
-        for(var e : el) {
-            place(e);
-        }
 
+        el.forEach(this::place);
         minWidth.set(el.getMinimumWidth());
         minHeight.set(el.getMinimumHeight());
-        maxWidth.set(el.getMaximumWidth());
-        maxHeight.set(el.getMaximumHeight());
-        size = el.size();
     }
     
     /**
-     * Constructor.
+     * Layout constructor.
      *
      * @param el                  Elements.
      * @param layoutSupplier      Initial layout.
@@ -370,45 +411,17 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
                              float maxRowRangeIncrease, float maxColRangeIncrease,
                              int maxRowNumber, int maxColNumber) {
         this(
-            new LayoutableMatrix<>(
+            new LayoutableMatrix.UncheckedLayoutableMatrix<>(
                 el, layoutSupplier,
                 initialWidth, initialHeight,
                 initialRowNumber, initialColNumber,
                 maxRowRangeIncrease, maxColRangeIncrease,
                 maxRowNumber, maxColNumber
-            )
+            ),
+            true
         );
     }
 
-    /**
-     * Constructor.
-     *
-     * @param el                  Elements.
-     * @param layoutSupplier      Initial layout.
-     * @param initialWidth        Width.
-     * @param initialHeight       Height.
-     * @param initialRowNumber    Row number.
-     * @param initialColNumber    Column number.
-     * @param maxRowRangeIncrease Maximum row range increase.
-     * @param maxColRangeIncrease Maximum column range increase.
-     * @param maxRowNumber        Maximum rows.
-     * @param maxColNumber        Maximum columns.
-     */
-    public CoordinatesMatrix(CoordinatesStructure<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier,
-                             double initialWidth, double initialHeight,
-                             int initialRowNumber, int initialColNumber,
-                             float maxRowRangeIncrease, float maxColRangeIncrease,
-                             int maxRowNumber, int maxColNumber) {
-        this(
-            new LayoutableMatrix<>(
-                el, layoutSupplier,
-                initialWidth, initialHeight,
-                initialRowNumber, initialColNumber,
-                maxRowRangeIncrease, maxColRangeIncrease,
-                maxRowNumber, maxColNumber
-            )
-        );
-    }
     
     /**
      * Should be called whenever {@link #elements} is modified.
@@ -557,7 +570,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @param p Coordinates.
      * @return The list.
      */
-    private List<CoordinatesElement<E>> getListAt(Point2D p) {
+    private Collection<CoordinatesElement<E>> getListAt(Point2D p) {
         int x = Math.min((int) p.getX(), maxRowNumber - 1);
         int y = Math.min((int) p.getY(), maxColNumber - 1);
         return elements[Math.max(x, 0)][Math.max(y, 0)];
@@ -736,7 +749,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return New array.
      */
     @SuppressWarnings("unchecked")
-    private List<CoordinatesElement<E>>[][] newArray(double newWidth, double newHeight) {
+    private Collection<CoordinatesElement<E>>[][] newArray(double newWidth, double newHeight) {
         int row = elements.length;
         int col = elements[0].length;
 
@@ -748,7 +761,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
             col = (int) Math.min(maxColNumber, newHeight / colRange);
         }
         
-        var p = (List<CoordinatesElement<E>>[][]) Array.newInstance(List.class, row, col);
+        var p = (List<CoordinatesElement<E>>[][]) Array.newInstance(ArrayList.class, row, col);
         
         for(var t : p) {
             for(int i = 0; i < t.length; i++) {
@@ -907,7 +920,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return {@code true} if it contains it; {@code false} otherwise.
      */
     @Override
-    public boolean contains(CoordinatesElement<E> c) {
+    public boolean containsCoordinates(CoordinatesElement<E> c) {
         return getListAt(indexesOf(c)).contains(c);
     }
 
@@ -980,52 +993,48 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         return sb.toString();
     }
 
-    
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+
+        if(o instanceof CoordinatesMatrix<?> cm) {
+            return Arrays.deepEquals(elements, cm.elements);
+        }
+
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return elements != null ? Arrays.deepHashCode(elements) : 0;
+    }
+
+
     /**
      * 3D internalItr over {@link #elements}.
      */
     protected class MatrixIterator implements CoordinatesIterator<CoordinatesElement<E>> {
 
         /**
-         * Current row index.
+         * Current iterator's row index.
          */
         private int currentRow = 0;
 
         /**
-         * Current column index.
+         * Current iterator's column index.
          */
         private int currentCol = 0;
 
         /**
-         * Current index in the current row and column.
+         * Current iterator.
          */
-        private int currentIndex = -1;
-        
-        /**
-         * Row index of the next element. {@code -1} if no next element.
-         */
-        private int nextRow = 0;
-
-        /**
-         * Column index of the next element. {@code -1} if no next element.
-         */
-        private int nextCol = 0;
-
-        /**
-         * Index of the next element. {@code -1} if no next element.
-         */
-        private int nextIndex = -1;
+        private Iterator<CoordinatesElement<E>> itr;
 
         /**
          * Expected modification count for concurrent modification.
          * Useless here as this version of the class is 'immutable'.
          */
         private int expectedModCount;
-
-        /**
-         * Whether the end of the structure was reached.
-         */
-        private boolean reachedTheEnd = false;
         
 
         /**
@@ -1033,8 +1042,58 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
          */
         protected MatrixIterator() {
             expectedModCount = modCount;
-            updateNext(false);
+            var total = new ArrayList<CoordinatesElement<E>>(size);
+                
+            /*
+            for(int i = currentRow; i < elements.length; i++) {
+                for(int j = currentCol; j < elements[i].length; j++) {
+                    if(!elements[i][j].isEmpty()) {
+                        currentRow = i;
+                        currentCol = j;
+                        // itr = new ArrayList<>(elements[i][j]).iterator();
+                        var l = new ArrayList<>(elements[i][j]);
+                        System.out.println(l);
+                        itr = l.iterator();
+                    }
+                }
+            }
+            */
+            
+            for(var t : elements) {
+                for(var l : t) {
+                    total.addAll(l);
+                }
+            }
+            
+            itr = total.iterator();
         }
+
+
+        /**
+         * Getter for the current iterator.
+         * 
+         * @return The current iterator.
+         */
+        protected Iterator<CoordinatesElement<E>> itr() {
+            return itr;
+        }
+        
+        /**
+         * Sets the expected mod count to the current mod count.
+         */
+        protected void updateExpectedModCount() {
+            expectedModCount = modCount;
+        }
+
+        /**
+         * Concurrent modification checker.
+         */
+        protected void checkForComod() {
+            if(expectedModCount != modCount) {
+                throw new ConcurrentModificationException();
+            }
+        }
+        
         
         /**
          * {@inheritDoc}
@@ -1044,11 +1103,11 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         @Override
         public boolean hasNext() {
             checkForComod();
-            
-            updateNext(false);
-            return !reachedTheEnd;
+            // updateItr();
+            // return itr != null && itr.hasNext();
+            return itr.hasNext();
         }
-
+        
         /**
          * {@inheritDoc}
          *
@@ -1059,118 +1118,46 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         public CoordinatesElement<E> next() {
             checkForComod();
             
-            updateNext(false);
-            
-            if(reachedTheEnd) {
+            /*
+            if(itr == null) {
                 throw new NoSuchElementException();
             }
             
-            currentRow = nextRow;
-            currentCol = nextCol;
-            currentIndex = nextIndex;
-            return elements[nextRow][nextCol].get(nextIndex);
-        }
-
-
-        /**
-         * Getter for the potential next element.
-         * 
-         * @return Optional of the next element.
-         */
-        protected Optional<CoordinatesElement<E>> getPotentialNext() {
-            if(nextRow == -1) {
-                return Optional.empty();
+            if(itr.hasNext()) {
+                return itr.next();
             }
-            
-            try {
-                return Optional.of(elements[nextRow][nextCol].get(nextIndex));
-            } catch(IndexOutOfBoundsException e) {
-                return Optional.empty();
+            else {
+                updateItr();
+                return next();
             }
+            */
+
+           
+            return itr.next();
         }
 
+        
         /**
-         * Whether this internalItr has reached the end of the matrix.
-         * 
-         * @return Whether this internalItr has reached the end of the matrix.
+         * Updates the current iterator; sets it to {@code null}
+         * if no further elements.
          */
-        protected boolean hasReachedTheEnd() {
-            return reachedTheEnd;
-        }
-
-        /**
-         * Sets the expected mod count to the current mod count.
-         */
-        protected void updateExpectedModCount() {
-            expectedModCount = modCount;
-        }
-
-        /**
-         * Updates {@link #nextRow}, {@link #nextCol} and
-         * {@link #nextIndex} to the coordinates of the next
-         * element; sets to {@code -1} if there is none.
-         * 
-         * @param force Forces an update.
-         */
-        protected void updateNext(boolean force) {
-            if(!shouldUpdate() && !force) {
+        private void updateItr() {
+            if(itr == null || itr.hasNext()) {
                 return;
             }
 
-            // next element is in the same row and same column (= in the same list)
-            if(currentIndex < elements[currentRow][currentCol].size() - 1) {
-                nextIndex++;
-                return;
-            }
-
-            // next element is in the same row (= same sub array)
-            for(int c = currentCol + 1; c < elements[currentRow].length; c++) {
-                if(!elements[currentRow][c].isEmpty()) {
-                    nextCol = c;
-                    nextIndex = 0;
-                    return;
-                }
-            }
-            
-            // different row
-            for(int i = currentRow + 1; i < elements.length; i++) {
-                for(int j = 0; j < elements[i].length; j++) {
+            for(int i = currentRow; i < elements.length; i++) {
+                for(int j = currentCol; j < elements[i].length; j++) {
                     if(!elements[i][j].isEmpty()) {
-                        nextRow = i;
-                        nextCol = j;
-                        nextIndex = 0;
-                        return;
+                        currentRow = i;
+                        currentCol = j;
+                        var l = new ArrayList<>(elements[i][j]);
+                        itr = l.iterator();
                     }
                 }
             }
 
-            // reached the end
-            nextRow = -1;
-            nextCol = -1;
-            nextIndex= -1;
-            reachedTheEnd = true;
-        }
-        
-        
-        /**
-         * Whether to search for the next element.
-         * 
-         * @return {@code true} if the next element should be searched.
-         */
-        private boolean shouldUpdate() {
-            return !reachedTheEnd
-                && currentIndex == nextIndex 
-                && currentCol == nextCol 
-                && currentRow == nextRow;
-        }
-
-        /**
-         * Concurrent modification checker.
-         */
-        private void checkForComod() {
-            if(expectedModCount != modCount) {
-                throw new ConcurrentModificationException();
-            }
+            itr = null;
         }
     }
 }

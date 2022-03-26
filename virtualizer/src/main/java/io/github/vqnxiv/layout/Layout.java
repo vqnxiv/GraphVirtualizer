@@ -27,6 +27,41 @@ public interface Layout<E> {
      * @return This layout's structure.
      */
     LayoutableStructure<E> getStructure();
+
+
+    /**
+     * Minimum used width offset in the last 
+     * {@link #apply()} pass.
+     *
+     * @return Minimum used width offset.
+     */
+    default double getMinUsedWidth() {
+        return minUsedWidth().get();
+    }
+
+    /**
+     * Property of the minimum used width offset.
+     *
+     * @return Property of the minimum used width offset.
+     */
+    ReadOnlyDoubleProperty minUsedWidth();
+
+    /**
+     * Minimum used height offset in the last 
+     * {@link #apply()} pass.
+     *
+     * @return Minimum used height offset.
+     */
+    default double getMinUsedHeight() {
+        return minUsedHeight().get();
+    }
+
+    /**
+     * Property of the minimum used height offset.
+     *
+     * @return Property of the minimum used height offset.
+     */
+    ReadOnlyDoubleProperty minUsedHeight();
     
     /**
      * Maximum used width offset in the last 

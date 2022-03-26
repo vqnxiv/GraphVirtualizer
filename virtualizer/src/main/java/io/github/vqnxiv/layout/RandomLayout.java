@@ -34,11 +34,15 @@ public class RandomLayout<E> extends AbstractConstrainedLayout<E> {
      * Constructor.
      *
      * @param s Structure.
+     * @param minWidth  Initial minimum allowed width.
+     * @param minHeight Initial minimum allowed height.
      * @param maxWidth  Initial maximum allowed width.
      * @param maxHeight Initial maximum allowed height.
      */
-    public RandomLayout(LayoutableStructure<E> s, double maxWidth, double maxHeight) {
-        super(s, maxWidth, maxHeight);
+    public RandomLayout(LayoutableStructure<E> s, 
+                        double minWidth, double minHeight, 
+                        double maxWidth, double maxHeight) {
+        super(s, minWidth, minHeight, maxWidth, maxHeight);
     }
 
     
@@ -47,25 +51,28 @@ public class RandomLayout<E> extends AbstractConstrainedLayout<E> {
      */
     @Override
     public void apply() {
-        double maxW = -1d;
-        double maxH = -1d;
+        double minW = getMaxAllowedWidth();
+        double minH = getMaxAllowedHeight();
+        double maxW = getMinAllowedWidth();
+        double maxH = getMinAllowedHeight();
         
         double x, y;
 
         Map<CoordinatesElement<E>, Point2D> m = new HashMap<>();
-        
-        for(var e : structure) {
-            x = ThreadLocalRandom.current().nextDouble(getMaxAllowedWidth());
-            y = ThreadLocalRandom.current().nextDouble(getMaxAllowedHeight());
 
+        for(var e : structure) {
+            x = ThreadLocalRandom.current().nextDouble(getMinAllowedWidth(), getMaxAllowedWidth());
+            y = ThreadLocalRandom.current().nextDouble(getMinAllowedHeight(), getMaxAllowedHeight());
+
+            minW = Math.min(x, minW);
+            minH = Math.min(y, minH);
             maxW = Math.max(x, maxW);
             maxH = Math.max(y, maxH);
 
             m.put(e, new Point2D(x, y));
         }
 
-        maxUsedWidth.set(maxW);
-        maxUsedHeight.set(maxH);
+        setUsedDimensions(minW, minH, maxW, maxH);
         structure.repositionAllTo(m);
     }
 }

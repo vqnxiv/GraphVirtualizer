@@ -160,34 +160,6 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
         );
     }
 
-    /**
-     * Constructor.
-     *
-     * @param el                  Elements.
-     * @param layoutSupplier      Initial layout.
-     * @param initialWidth        Width.
-     * @param initialHeight       Height.
-     * @param initialRowNumber    Row number.
-     * @param initialColNumber    Column number.
-     * @param maxRowRangeIncrease Maximum row range increase.
-     * @param maxColRangeIncrease Maximum column range increase.
-     * @param maxRowNumber        Maximum rows.
-     * @param maxColNumber        Maximum columns.
-     */
-    public MutableMatrix(CoordinatesStructure<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier, 
-                         double initialWidth, double initialHeight, 
-                         int initialRowNumber, int initialColNumber, 
-                         float maxRowRangeIncrease, float maxColRangeIncrease, 
-                         int maxRowNumber, int maxColNumber) {
-        super(
-            el, layoutSupplier, 
-            initialWidth, initialHeight, 
-            initialRowNumber, initialColNumber, 
-            maxRowRangeIncrease, maxColRangeIncrease, 
-            maxRowNumber, maxColNumber
-        );
-    }
-
     
     /**
      * {@inheritDoc}
@@ -196,7 +168,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      * @return {@code true} if it was successfully added.
      */
     @Override
-    public boolean addAt(CoordinatesElement<E> element) {
+    public boolean addCoordinates(CoordinatesElement<E> element) {
         if(!place(element)) {
             return false;
         }
@@ -212,7 +184,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      * @return {@code true} if at least one element was successfully added.
      */
     @Override
-    public boolean addAllAt(Collection<CoordinatesElement<E>> coordinatesElements) {
+    public boolean addAllCoordinates(Collection<CoordinatesElement<E>> coordinatesElements) {
         var l = new ArrayList<CoordinatesElement<E>>(coordinatesElements.size());
 
         double minX = Double.MAX_VALUE;
@@ -246,7 +218,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      * @return {@code true} if the element was successfully removed.
      */
     @Override
-    public boolean remove(E element) {
+    public boolean removeValue(E element) {
         CoordinatesElement<E> c = null;
         
         for(var c2 : this) {
@@ -272,7 +244,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      * @return {@code true} if at least one element was successfully removed.
      */
     @Override
-    public boolean removeAll(Collection<E> elements) {
+    public boolean removeAllValues(Collection<E> elements) {
         var l = new ArrayList<CoordinatesElement<E>>(elements.size());
 
         for(var c : this) {
@@ -281,7 +253,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
             }
         }
 
-        return !(l.isEmpty()) && removeAllAt(l);
+        return !(l.isEmpty()) && removeAllCoordinates(l);
     }
 
     /**
@@ -291,7 +263,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      * @return {@code true} if the element was successfully removed.
      */
     @Override
-    public boolean removeAt(CoordinatesElement<E> element) {
+    public boolean removeCoordinates(CoordinatesElement<E> element) {
         if(!delete(element)) {
             return false;
         }
@@ -307,7 +279,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      * @return {@code true} if at least one element was successfully removed.
      */
     @Override
-    public boolean removeAllAt(Collection<CoordinatesElement<E>> coordinatesElements) {
+    public boolean removeAllCoordinates(Collection<CoordinatesElement<E>> coordinatesElements) {
         var l = new ArrayList<CoordinatesElement<E>>(coordinatesElements.size());
 
         double minX = Double.MAX_VALUE;
@@ -341,7 +313,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      * @return {@code true} if at least one element was successfully removed.
      */
     @Override
-    public boolean removeIf(Predicate<E> condition) {
+    public boolean removeValuesIf(Predicate<? super E> condition) {
         return removeCoordinatesIf(c -> condition.test(c.getElement()));
     }
 
@@ -352,7 +324,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
      * @return {@code true} if at least one element was successfully removed.
      */
     @Override
-    public boolean removeCoordinatesIf(Predicate<CoordinatesElement<E>> condition) {
+    public boolean removeCoordinatesIf(Predicate<? super CoordinatesElement<E>> condition) {
         var l = new ArrayList<CoordinatesElement<E>>();
 
         for(var c : this) {
@@ -361,7 +333,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
             }
         }
 
-        return !(l.isEmpty()) && removeAllAt(l);
+        return !(l.isEmpty()) && removeAllCoordinates(l);
     }
 
     /**
@@ -534,7 +506,11 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
          */
         @Override
         public void remove() {
-            removeAt(getLast());
+            if(getLast() == null) {
+                throw new IllegalStateException();
+            }
+            
+            delete(getLast());
             nullLast();
             updateExpectedModCount();
         }

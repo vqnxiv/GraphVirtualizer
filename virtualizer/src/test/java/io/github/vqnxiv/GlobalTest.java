@@ -2,12 +2,11 @@ package io.github.vqnxiv;
 
 
 import io.github.vqnxiv.layout.RandomLayout;
+import io.github.vqnxiv.node.DecoratedNode;
 import io.github.vqnxiv.node.TimedNodePool;
 import io.github.vqnxiv.structure.CoordinatesElement;
-import io.github.vqnxiv.node.DecoratedNode;
 import io.github.vqnxiv.structure.impl.CoordinatesList;
 import io.github.vqnxiv.structure.impl.CoordinatesMatrix;
-import io.github.vqnxiv.view.NodeVirtualizer;
 import io.github.vqnxiv.view.ThrottledNodeVirtualizer;
 import io.github.vqnxiv.view.VirtualizerRegion;
 import javafx.application.Application;
@@ -16,7 +15,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-
 
 import java.util.ArrayList;
 import java.util.List;
@@ -112,8 +110,7 @@ public class GlobalTest extends Application {
     }
 
     @Override
-    public void start(Stage stage) throws Exception {
-        // AnchorPane pane = new AnchorPane();
+    public void start(Stage stage) throws Exception { ;
         StackPane pane = new StackPane();
         
         List<Thing> l = new ArrayList<>(100);
@@ -122,17 +119,23 @@ public class GlobalTest extends Application {
             l.add(new Thing(Integer.toString(i * 10, 2), i));
         }
         
-        int n = 1000;
+        int n = 1_000;
         double z = 200_000d;
-        var struct = new CoordinatesList<>(l, s -> new RandomLayout<>(s, z, z));
+        // var struct = new CoordinatesList<>(l, s -> new RandomLayout<>(s, 0d, 0d, z, z));
         // var struct = new CoordinatesMatrix<>(l, z, z, n, n, 1.5f, 1.5f, n, n);
+        var struct = new CoordinatesMatrix<>(
+            l, s -> new RandomLayout<>(s, 0d, 0d, z, z),
+            z, z, n, n, 1.5f, 1.5f, n, n
+        );
         // var pool = new SetNodePool<>((CoordinatesElement<Thing> t) -> new DecoratedNodeLabel<>(t));
         var pool = new TimedNodePool<>(
             (CoordinatesElement<Thing> t) -> new DecoratedNodeLabel<>(t),
             10_000L,
             20
         );
-        
+
+        // System.out.println(struct.getMaximumWidth());
+        // System.out.println(struct.getMaximumHeight());
         
         // var nv = new NodeVirtualizer<>(struct, pool);
         var nv = new ThrottledNodeVirtualizer<>(struct, pool, true);
@@ -146,7 +149,7 @@ public class GlobalTest extends Application {
         // AnchorPane.setLeftAnchor(vr, 0d);
         // AnchorPane.setRightAnchor(vr, 0d);
 
-        System.out.println(nv.getTotalWidth() + " " + nv.getTotalHeight());
+        // System.out.println(nv.getTotalWidth() + " " + nv.getTotalHeight());
         
         stage.setScene(new Scene(pane));
         stage.show();

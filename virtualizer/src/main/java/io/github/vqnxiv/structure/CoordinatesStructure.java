@@ -24,6 +24,9 @@ import java.util.function.Predicate;
  */
 public interface CoordinatesStructure<E> extends CoordinatesIterable<CoordinatesElement<E>> {
     
+    // todo: to collection -> return unmodifiable deep copy
+    
+    
     /**
      * Gets all elements between the given coordinates.
      *
@@ -160,10 +163,21 @@ public interface CoordinatesStructure<E> extends CoordinatesIterable<Coordinates
      * @param element The element to search for.
      * @return {@code true} if this structure contains the specified element.
      */
-    default boolean contains(E element) {
+    default boolean containsValue(E element) {
         return coordinatesOf(element).isPresent();
     }
 
+    /**
+     * Returns {@code true} if this collection contains all of the elements
+     * in the specified collection.
+     *
+     * @param c Elements to check.
+     * @return {@code true} if all the given elements are in this structure.
+     */
+    default boolean containsAllValues(Collection<E> c) {
+        return coordinatesOf(c).size() == c.size();
+    }
+    
     /**
      * Returns {@code true} if this structure contains the specified element
      * at the specified coordinates (as far as double precision goes).
@@ -171,8 +185,25 @@ public interface CoordinatesStructure<E> extends CoordinatesIterable<Coordinates
      * @param element The element to search for.
      * @return {@code true} if this structure contains the specified element.
      */
-    boolean contains(CoordinatesElement<E> element);
+    boolean containsCoordinates(CoordinatesElement<E> element);
 
+    /**
+     * Returns {@code true} if this collection contains all of the elements
+     * in the specified collection.
+     *
+     * @param c Elements to check.
+     * @return {@code true} if all the given elements are in this structure.
+     */
+    default boolean containsAllCoordinates(Collection<CoordinatesElement<E>> c) {
+        for(var c1 : c) {
+            if(!containsCoordinates(c1)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+    
     /**
      * Returns the coordinates of the given element if it is in the structure.
      * 
@@ -188,5 +219,4 @@ public interface CoordinatesStructure<E> extends CoordinatesIterable<Coordinates
      * @return The coordinates of the given elements that are in the structure.
      */
     Map<E, CoordinatesElement<E>> coordinatesOf(Collection<E> elements);
-
 }
