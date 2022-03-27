@@ -51,9 +51,9 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
     }
 
     /**
-     * Constructor.
+     * Layout constructor.
      *
-     * @param el             Elements
+     * @param el             Elements.
      * @param layoutSupplier Initial layout.
      */
     public MutableMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier) {
@@ -133,7 +133,7 @@ public class MutableMatrix<E> extends LayoutableMatrix<E> implements MutableStru
     }
 
     /**
-     * Constructor.
+     * Layout constructor.
      *
      * @param el                  Elements.
      * @param layoutSupplier      Initial layout.

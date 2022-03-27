@@ -1014,21 +1014,11 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * 3D internalItr over {@link #elements}.
      */
     protected class MatrixIterator implements CoordinatesIterator<CoordinatesElement<E>> {
-
-        /**
-         * Current iterator's row index.
-         */
-        private int currentRow = 0;
-
-        /**
-         * Current iterator's column index.
-         */
-        private int currentCol = 0;
-
+        
         /**
          * Current iterator.
          */
-        private Iterator<CoordinatesElement<E>> itr;
+        private final Iterator<CoordinatesElement<E>> itr;
 
         /**
          * Expected modification count for concurrent modification.
@@ -1043,22 +1033,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         protected MatrixIterator() {
             expectedModCount = modCount;
             var total = new ArrayList<CoordinatesElement<E>>(size);
-                
-            /*
-            for(int i = currentRow; i < elements.length; i++) {
-                for(int j = currentCol; j < elements[i].length; j++) {
-                    if(!elements[i][j].isEmpty()) {
-                        currentRow = i;
-                        currentCol = j;
-                        // itr = new ArrayList<>(elements[i][j]).iterator();
-                        var l = new ArrayList<>(elements[i][j]);
-                        System.out.println(l);
-                        itr = l.iterator();
-                    }
-                }
-            }
-            */
-            
+
             for(var t : elements) {
                 for(var l : t) {
                     total.addAll(l);
@@ -1067,16 +1042,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
             
             itr = total.iterator();
         }
-
-
-        /**
-         * Getter for the current iterator.
-         * 
-         * @return The current iterator.
-         */
-        protected Iterator<CoordinatesElement<E>> itr() {
-            return itr;
-        }
+        
         
         /**
          * Sets the expected mod count to the current mod count.
@@ -1103,8 +1069,6 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         @Override
         public boolean hasNext() {
             checkForComod();
-            // updateItr();
-            // return itr != null && itr.hasNext();
             return itr.hasNext();
         }
         
@@ -1117,47 +1081,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
         @Override
         public CoordinatesElement<E> next() {
             checkForComod();
-            
-            /*
-            if(itr == null) {
-                throw new NoSuchElementException();
-            }
-            
-            if(itr.hasNext()) {
-                return itr.next();
-            }
-            else {
-                updateItr();
-                return next();
-            }
-            */
-
-           
             return itr.next();
-        }
-
-        
-        /**
-         * Updates the current iterator; sets it to {@code null}
-         * if no further elements.
-         */
-        private void updateItr() {
-            if(itr == null || itr.hasNext()) {
-                return;
-            }
-
-            for(int i = currentRow; i < elements.length; i++) {
-                for(int j = currentCol; j < elements[i].length; j++) {
-                    if(!elements[i][j].isEmpty()) {
-                        currentRow = i;
-                        currentCol = j;
-                        var l = new ArrayList<>(elements[i][j]);
-                        itr = l.iterator();
-                    }
-                }
-            }
-
-            itr = null;
         }
     }
 }

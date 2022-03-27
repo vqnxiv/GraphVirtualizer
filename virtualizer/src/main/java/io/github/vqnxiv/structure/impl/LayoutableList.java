@@ -314,9 +314,6 @@ public class LayoutableList<E> extends CoordinatesList<E> implements LayoutableS
          */
         @Override
         public CoordinatesElement<E> next() {
-            // the underlying list itself isn't changed 
-            // so it could be done, but that way it's
-            // consistent w/ matrix + potentially other structures?
             checkForComod();
             lastElt = super.next();
             return lastElt;

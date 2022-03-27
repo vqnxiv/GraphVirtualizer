@@ -202,7 +202,7 @@ public class NodeVirtualizer<E> extends AbstractVirtualizer {
         
         // strict reduction of the view area 
         // -> means it's just remove out of area + reposition
-        if(topLeftX <= previousTopLeft.getX() && topLeftY <= previousTopLeft.getY()
+        if(topLeftX >= previousTopLeft.getX() && topLeftY >= previousTopLeft.getY()
         && bottomRightX <= previousBottomRight.getX() && bottomRightY <= previousBottomRight.getY()) {
             filterOutBetween(topLeftX, topLeftY, bottomRightX, bottomRightY, width, height);
             previousTopLeft = new Point2D(topLeftX, topLeftY);

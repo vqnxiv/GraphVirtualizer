@@ -119,14 +119,17 @@ public class GlobalTest extends Application {
             l.add(new Thing(Integer.toString(i * 10, 2), i));
         }
         
+        
         int n = 1_000;
         double z = 200_000d;
+        
         // var struct = new CoordinatesList<>(l, s -> new RandomLayout<>(s, 0d, 0d, z, z));
         // var struct = new CoordinatesMatrix<>(l, z, z, n, n, 1.5f, 1.5f, n, n);
         var struct = new CoordinatesMatrix<>(
             l, s -> new RandomLayout<>(s, 0d, 0d, z, z),
             z, z, n, n, 1.5f, 1.5f, n, n
         );
+
         // var pool = new SetNodePool<>((CoordinatesElement<Thing> t) -> new DecoratedNodeLabel<>(t));
         var pool = new TimedNodePool<>(
             (CoordinatesElement<Thing> t) -> new DecoratedNodeLabel<>(t),
@@ -134,16 +137,15 @@ public class GlobalTest extends Application {
             20
         );
 
-        // System.out.println(struct.getMaximumWidth());
-        // System.out.println(struct.getMaximumHeight());
-        
         // var nv = new NodeVirtualizer<>(struct, pool);
         var nv = new ThrottledNodeVirtualizer<>(struct, pool, true);
+      
         var vr = new VirtualizerRegion(nv);
+
         vr.setPrefSize(300d, 300d);
         
         pane.getChildren().add(vr);
-
+        
         // AnchorPane.setTopAnchor(vr, 0d);
         // AnchorPane.setBottomAnchor(vr, 0d);
         // AnchorPane.setLeftAnchor(vr, 0d);

@@ -98,13 +98,8 @@ public abstract class AbstractVirtualizer implements Virtualizer {
      * @param offset Offset dimension.
      */
     private void updateView(DoubleProperty view, DoubleProperty total, BoundedDoubleProperty offset) {
-        try {
-            offset.setMax(total.get() - view.get());
-            onViewChanged();
-        } catch(IllegalArgumentException ignored) {
-            offset.setMax(0);
-            onViewChanged();
-        }
+        offset.setMax(total.get() - view.get());
+        onViewChanged();
     }
     
     

@@ -12,11 +12,9 @@ import javafx.geometry.Point2D;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -42,6 +40,15 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
     protected static final class UncheckedLayoutableMatrix<E> extends LayoutableMatrix<E> {
 
         /**
+         * The layout given by the factory function.
+         * Keeping it allows to directly get its maximum used
+         * dimensions and call {@link #ensureSize(double, double)}
+         * once at the start of the repositioning so we don't have
+         * to constantly resize.
+         */
+        private final Layout<E> layout;
+        
+        /**
          * Layout constructor.
          *
          * @param el             Elements.
@@ -49,7 +56,8 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
          */
         public UncheckedLayoutableMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier) {
             super(el);
-            layoutSupplier.apply(this).apply();
+            layout = layoutSupplier.apply(this);
+            layout.apply();
         }
 
         /**
@@ -78,6 +86,9 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
                 maxRowRangeIncrease, maxColRangeIncrease, 
                 maxRowNumber, maxColNumber
             );
+
+            layout = layoutSupplier.apply(this);
+            layout.apply();
         }
         
 
@@ -90,13 +101,13 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
         @Override
         public void repositionAllTo(Map<CoordinatesElement<E>, Point2D> m) {
             emptyElements();
+            ensureSize(layout.getMaxUsedWidth(), layout.getMaxUsedHeight());
             m.forEach(
                 (k, v) -> {
                     k.setXY(v);
                     place(k);
                 }
             );
-
             updateDimensions();
         }
     }  
@@ -368,32 +379,17 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
     protected class LayoutableIterator extends MatrixIterator {
 
         /**
-         * Keeps track of already visited elements so that they can be skipped.
-         */
-        private final Set<CoordinatesElement<E>> visited;
-
-        /**
          * Last seen element. {@code null} if {@link #reposition(double, double)}
          * or {@link #remove()} were called.
          */
         private CoordinatesElement<E> last;
 
-        /**
-         * Next element. {@code null} if no more next elements.
-         */
-        private CoordinatesElement<E> next;
-        
         
         /**
          * Constructor.
          */
         protected LayoutableIterator() {
             super();
-            visited = new HashSet<>();
-            
-            // if(super.hasNext()) {
-            //     next = super.next();
-            // }
         }
 
 
@@ -404,7 +400,6 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
          */
         @Override
         public boolean hasNext() {
-            // return next != null;
             return super.hasNext();
         }
 
@@ -416,16 +411,6 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
          */
         @Override
         public CoordinatesElement<E> next() {
-            // if(next == null) {
-            //     throw new NoSuchElementException();
-            // }
-            
-            // last = next;
-            // visited.add(last);
-            
-            // while(visited.contains(next) && next != null) {
-            //     next = (super.hasNext()) ? super.next() : null;
-            // }
             last = super.next();
             
             return last;
@@ -442,17 +427,7 @@ public class LayoutableMatrix<E> extends CoordinatesMatrix<E> implements Layouta
             if(last == null) {
                 throw new IllegalStateException();
             }
-            
-            /*
-            var cp = new CoordinatesElement<>(last);
-            last.setXY(x, y);
-            place(last);
-            
-            var pTL = new Point2D(Math.min(cp.getX(), x), Math.min(cp.getY(), y));
-            var pBR = new Point2D(Math.max(cp.getX(), x), Math.max(cp.getY(), y));
-            fireMoveEvent(Map.of(cp, last.getXY()), pTL, pBR);
-            */
-            
+
             repositionTo(last, x, y);
             updateExpectedModCount();
         }
