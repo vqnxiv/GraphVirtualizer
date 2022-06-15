@@ -1,13 +1,11 @@
 package io.github.vqnxiv.view;
 
 
-import io.github.vqnxiv.node.DecoratedNodePool;
-import io.github.vqnxiv.structure.CoordinatesElement;
-import io.github.vqnxiv.structure.CoordinatesStructure;
 import javafx.application.Platform;
 import javafx.geometry.Point2D;
 
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -30,12 +28,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * keeps a list of the positions it should shift to
  * and queues them one by one in order to make the 
  * movement 'smoother'.
- * 
- * @param <E> The decorator type of the nodes.
  *
  * @see NodeVirtualizer
  */
-public class ThrottledNodeVirtualizer<E> extends NodeVirtualizer<E> {
+public class ThrottledNodeVirtualizer extends NodeVirtualizer {
 
     /**
      * Whether it's allowed to send a refresh through Platform.runLater().
@@ -55,45 +51,45 @@ public class ThrottledNodeVirtualizer<E> extends NodeVirtualizer<E> {
     /**
      * Possible next positions.
      */
-    // not thread safe if refreshView is called from non JFX thread?
     private final Deque<Point2D> nextPositions = new ArrayDeque<>();
     
     
     /**
      * Constructor with default look ahead and disabled blocking.
+     * Drawing priority is determined by the iteration
+     * order of the given collection.
      *
-     * @param structure Elements.
-     * @param pool      Node pool.
+     * @param pairs The structures and pools.
      */
-    public ThrottledNodeVirtualizer(CoordinatesStructure<E> structure, DecoratedNodePool<CoordinatesElement<E>> pool) {
-        super(structure, pool);
+    public ThrottledNodeVirtualizer(Collection<StructureToPool<?>> pairs) {
+        super(pairs);
         blocking = false;
     }
 
     /**
      * Constructor.
+     * Drawing priority is determined by the iteration
+     * order of the given collection.
      *
-     * @param structure Elements.
-     * @param pool      Node pool.
+     * @param pairs The structures and pools.
      * @param blocking  Whether to enable blocking.
      */
-    public ThrottledNodeVirtualizer(CoordinatesStructure<E> structure, DecoratedNodePool<CoordinatesElement<E>> pool,
-                                    boolean blocking) {
-        super(structure, pool);
+    public ThrottledNodeVirtualizer(Collection<StructureToPool<?>> pairs, boolean blocking) {
+        super(pairs);
         this.blocking = blocking;
     }
 
     /**
      * Constructor.
+     * Drawing priority is determined by the iteration
+     * order of the given collection.
      *
-     * @param structure Elements.
-     * @param pool      Node pool.
+     * @param pairs The structures and pools.
      * @param blocking  Whether to enable blocking.
      * @param lookAhead Look ahead value.
      */
-    public ThrottledNodeVirtualizer(CoordinatesStructure<E> structure, DecoratedNodePool<CoordinatesElement<E>> pool,
-                                    boolean blocking, double lookAhead) {
-        super(structure, pool, lookAhead);
+    public ThrottledNodeVirtualizer(Collection<StructureToPool<?>> pairs, boolean blocking, double lookAhead) {
+        super(pairs, lookAhead);
         this.blocking = blocking;
     }
 
@@ -119,6 +115,11 @@ public class ThrottledNodeVirtualizer<E> extends NodeVirtualizer<E> {
 
     /**
      * {@inheritDoc}
+     * <p>
+     * Refreshing is sent through {@link Platform#runLater(Runnable)}
+     * <u>iff</u> this method was <u>not</u> called on the FX thread. 
+     * If it was called on the FX thread, the view is directly
+     * updated.
      */
     @Override
     public void refreshView() {
@@ -127,7 +128,12 @@ public class ThrottledNodeVirtualizer<E> extends NodeVirtualizer<E> {
         }
         
         if(canUpdate.getAndSet(false)) {
-            doUpdate();
+            if(Platform.isFxApplicationThread()) {
+                doUpdate();
+            }
+            else {
+                Platform.runLater(this::doUpdate);
+            }
         }
         else {
             onceMore.set(true);
@@ -139,45 +145,20 @@ public class ThrottledNodeVirtualizer<E> extends NodeVirtualizer<E> {
      * Refreshes the view to either the current values of the
      * offset properties or the next position in the queue
      * depending on whether blocking is enabled.
-     * <br>
-     * Refreshing is sent through {@link Platform#runLater(Runnable)}
-     * <u>iff</u> this method was <u>not</u> called on the FX thread. 
-     * If it was called on the FX thread, the view is directly
-     * updated.
+     * This does <u>not</u> check whether it was called on the FX thread.
      */
     private void doUpdate() {
-        // move fxthread check in refresh
-        if(Platform.isFxApplicationThread()) {
-            var p = getNext();
-            refreshTo(p.getX(), p.getY());
-            
-            canUpdate.set(true);
-            if(!nextPositions.isEmpty()) {
-                onceMore.set(true);
-            }
+        var p = getNext();
+        refreshTo(p.getX(), p.getY());
 
-            if(onceMore.getAndSet(false)) {
-                refreshView();
-            }
-        }
-        else {
-            Platform.runLater(
-                () -> {
-                    var p = getNext();
-                    refreshTo(p.getX(), p.getY());
-                    
-                    canUpdate.set(true);
-                    if(!nextPositions.isEmpty()) {
-                        onceMore.set(true);
-                    }
-
-                    if(onceMore.getAndSet(false)) {
-                        refreshView();
-                    }
-                }
-            );
+        canUpdate.set(true);
+        if(!nextPositions.isEmpty()) {
+            onceMore.set(true);
         }
 
+        if(onceMore.getAndSet(false)) {
+            refreshView();
+        }
     }
 
     /**

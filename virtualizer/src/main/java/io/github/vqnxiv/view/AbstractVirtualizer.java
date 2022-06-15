@@ -14,7 +14,6 @@ import javafx.beans.property.DoubleProperty;
  */
 public abstract class AbstractVirtualizer implements Virtualizer {
 
-
     /**
      * The total height of the content.
      */

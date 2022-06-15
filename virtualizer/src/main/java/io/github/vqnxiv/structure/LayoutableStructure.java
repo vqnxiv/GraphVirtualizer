@@ -93,5 +93,6 @@ public interface LayoutableStructure<E> extends CoordinatesStructure<E> {
      * 
      * @return The removed listeners.
      */
+    // todo: change to Map<Object, Consumer>
     Collection<Consumer<? super StructureChange.Move<E>>> clearMoveListeners();
 }

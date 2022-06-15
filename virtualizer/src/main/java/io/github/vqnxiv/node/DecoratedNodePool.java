@@ -19,7 +19,8 @@ public interface DecoratedNodePool<D> {
 
     /**
      * Get one DecoratedNode node which is decorated 
-     * with the given decorator.
+     * with the given decorator, if it is not already
+     * associated with a decoratednode in this pool.
      * 
      * @param d Decorator.
      * @return An instance of DecoratedNode.

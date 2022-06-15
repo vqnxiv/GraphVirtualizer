@@ -16,7 +16,6 @@ import java.util.Objects;
  */
 public class VirtualizerRegion extends AbstractAbleRegion {
 
-
     /**
      * The inner virtualizer whose view will be displayed in this region.
      */

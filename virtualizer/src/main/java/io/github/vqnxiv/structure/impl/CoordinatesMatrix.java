@@ -85,6 +85,92 @@ import java.util.function.Predicate;
 public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedStructure<E> {
 
     /**
+     * Layoutable matrix where {@link #repositionAllTo(Map)}) doesn't check
+     * whether the structure already contains the elements.
+     *
+     * It is only used for faster repositioning when creating a new matrix
+     * with a layout (as all the elements will likely be placed in the [0][0]
+     * collection so {@code contains} checks can be quite time consuming).
+     *
+     * @param <E> Type of elements.
+     */
+    private static final class UncheckedLayoutableMatrix<E> extends LayoutableMatrix<E> {
+
+        /**
+         * The layout given by the factory function.
+         * Keeping it allows to directly get its maximum used
+         * dimensions and call {@link #ensureSize(double, double)}
+         * once at the start of the repositioning so we don't have
+         * to constantly resize.
+         */
+        private final Layout<E> layout;
+
+        /**
+         * Layout constructor.
+         *
+         * @param el             Elements.
+         * @param layoutSupplier Initial layout.
+         */
+        public UncheckedLayoutableMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier) {
+            super(el);
+            layout = layoutSupplier.apply(this);
+            layout.apply();
+        }
+
+        /**
+         * Layout constructor.
+         *
+         * @param el                  Elements.
+         * @param layoutSupplier      Initial layout.
+         * @param initialWidth        Width.
+         * @param initialHeight       Height.
+         * @param initialRowNumber    Row number.
+         * @param initialColNumber    Column number.
+         * @param maxRowRangeIncrease Maximum row range increase.
+         * @param maxColRangeIncrease Maximum column range increase.
+         * @param maxRowNumber        Maximum rows.
+         * @param maxColNumber        Maximum columns.
+         */
+        public UncheckedLayoutableMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier,
+                                         double initialWidth, double initialHeight,
+                                         int initialRowNumber, int initialColNumber,
+                                         float maxRowRangeIncrease, float maxColRangeIncrease,
+                                         int maxRowNumber, int maxColNumber) {
+            super(
+                el,
+                initialWidth, initialHeight,
+                initialRowNumber, initialColNumber,
+                maxRowRangeIncrease, maxColRangeIncrease,
+                maxRowNumber, maxColNumber
+            );
+
+            layout = layoutSupplier.apply(this);
+            layout.apply();
+        }
+
+
+        /**
+         * {@inheritDoc}
+         *
+         * @param m Elements with their old coordinates mapped to
+         *          their new coordinates.
+         */
+        @Override
+        public void repositionAllTo(Map<CoordinatesElement<E>, Point2D> m) {
+            emptyElements();
+            ensureSize(layout.getMaxUsedWidth(), layout.getMaxUsedHeight());
+            m.forEach(
+                (k, v) -> {
+                    k.setXY(v);
+                    place(k);
+                }
+            );
+            updateDimensions();
+        }
+    }
+
+
+    /**
      * Default initial row number.
      */
     public static final int DEFAULT_ROW_NUMBER = 5;
@@ -298,7 +384,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @param layoutSupplier Initial layout.
      */
     public CoordinatesMatrix(Collection<E> el, Function<LayoutableStructure<E>, Layout<E>> layoutSupplier) {
-        this(new LayoutableMatrix.UncheckedLayoutableMatrix<>(el, layoutSupplier), true);
+        this(new UncheckedLayoutableMatrix<>(el, layoutSupplier), true);
     }
     
     /**
@@ -411,7 +497,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
                              float maxRowRangeIncrease, float maxColRangeIncrease,
                              int maxRowNumber, int maxColNumber) {
         this(
-            new LayoutableMatrix.UncheckedLayoutableMatrix<>(
+            new UncheckedLayoutableMatrix<>(
                 el, layoutSupplier,
                 initialWidth, initialHeight,
                 initialRowNumber, initialColNumber,
@@ -473,7 +559,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @param c The element to place.
      * @return {@code true} if it was added; {@code false} otherwise.
      */
-    protected boolean place(CoordinatesElement<E> c) {
+    protected final boolean place(CoordinatesElement<E> c) {
         ensureSize(c.getX(), c.getY());
         if(!getListAt(indexesOf(c)).add(c)) {
             return false;
@@ -491,7 +577,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @param c The element to remove.
      * @return {@code true} if it was removed; {@code false} otherwise.
      */
-    protected boolean delete(CoordinatesElement<E> c) {
+    protected final boolean delete(CoordinatesElement<E> c) {
         if(!getListAt(indexesOf(c)).remove(c)) {
             return false;
         }
@@ -513,7 +599,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return {@code true} if the element was present and successfully moved;
      * {@code false} otherwise.
      */
-    protected boolean move(CoordinatesElement<E> c, double x, double y) {
+    protected final boolean move(CoordinatesElement<E> c, double x, double y) {
         if(!getListAt(indexesOf(c)).remove(c)) {
             return false;
         }
@@ -545,14 +631,14 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return {@code true} if the element was present and successfully moved;
      * {@code false} otherwise.
      */
-    protected boolean move(CoordinatesElement<E> c, Point2D p) {
+    protected final boolean move(CoordinatesElement<E> c, Point2D p) {
         return move(c, p.getX(), p.getY());
     }
 
     /**
      * Empties {@link #elements}.
      */
-    protected void emptyElements() {
+    protected final void emptyElements() {
         for(var t : elements) {
             for(var l : t) {
                 l.clear();
@@ -582,7 +668,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      *
      * @param c The element to check.
      */
-    protected void setDimensionsIfOutside(CoordinatesElement<E> c) {
+    protected final void setDimensionsIfOutside(CoordinatesElement<E> c) {
         double minW = Math.min(minWidth.get(), c.getX());
         double minH = Math.min(minHeight.get(), c.getY());
         double maxW = Math.max(maxWidth.get(), c.getX());
@@ -597,7 +683,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @return {@code true} if one of the element's coordinates is
      * equal to one of the dimension properties.
      */
-    protected boolean isOnBound(CoordinatesElement<E> c) {
+    protected final boolean isOnBound(CoordinatesElement<E> c) {
         return c.getX() == minWidth.get()  || c.getX() == maxWidth.get()
             || c.getY() == minHeight.get() || c.getY() == maxHeight.get();
     }
@@ -610,7 +696,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @param maxW Potential new max width.
      * @param maxH Potential new max height.
      */
-    protected void setDimensions(double minW, double minH, double maxW, double maxH) {
+    protected final void setDimensions(double minW, double minH, double maxW, double maxH) {
         if(minW != minWidth.get()) {
             minWidth.set(minW);
         }
@@ -628,7 +714,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
     /**
      * Update dimensions properties.
      */
-    protected void updateDimensions() {
+    protected final void updateDimensions() {
         if(isEmpty()) {
             setDimensions(0d, 0d, 0d, 0d);
             return;
@@ -675,7 +761,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      * @param width  X coordinate.
      * @param height Y coordiinate.
      */
-    protected void ensureSize(double width, double height) {
+    protected final void ensureSize(double width, double height) {
         // ensures that the coordinates can get inside
         // e.g if ensureSize(p.x, p.y) p can be inside the array
         width++;
@@ -978,7 +1064,6 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
      */
     @Override
     public void forEach(Consumer<? super CoordinatesElement<E>> action) {
-        // will automatically throw ConcurrentModififcationException
         for(var e : this) {
             action.accept(e);
         }
@@ -1011,7 +1096,7 @@ public class CoordinatesMatrix<E> implements CoordinatesStructure<E>, LocalizedS
 
 
     /**
-     * 3D internalItr over {@link #elements}.
+     * Wrapper over an arraylist iterator over {@link #elements}.
      */
     protected class MatrixIterator implements CoordinatesIterator<CoordinatesElement<E>> {
         

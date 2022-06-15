@@ -56,12 +56,11 @@ public class TimedNodePool<D> implements DecoratedNodePool<D> {
          * Constructor.
          * 
          * @param d DecoratedNode.
-         * @param t Timestamp.
          */
-        private TimestampedDecorated(DecoratedNode<D> d, long t) {
+        private TimestampedDecorated(DecoratedNode<D> d) {
             Objects.requireNonNull(d);
             decoratedNode = d;
-            timestamp = t;
+            timestamp = 0L;
         }
 
         /**
@@ -144,23 +143,6 @@ public class TimedNodePool<D> implements DecoratedNodePool<D> {
      */
     private final int coreSize;
 
-    /**
-     * Whether the pool is currently processing a batch 
-     * (e.g {@link #getAll(Collection)} or {@link #releaseAll(Collection)}).
-     * <p>
-     * Useful for two things: <br>
-     * - making sure we don't remove unused nodes while retrieving multiple
-     * (which coumd force to recreate a node when we just released some) <br>
-     * - sets the same timestamp for a complete batch so they can be released
-     * at once
-     */
-    private boolean isInBatch = false;
-
-    /**
-     * Current timestamp.
-     */
-    private long now;
-
 
     /**
      * Constructor with default keep alive time and core size.
@@ -190,30 +172,49 @@ public class TimedNodePool<D> implements DecoratedNodePool<D> {
 
 
     /**
-     * Updates the timestamp if a batch isn't being processed.
-     * 
-     * @param force Force an update regardless of a possible batch.
+     * Checks free nodes and clears out old ones if needed.
      */
-    private void now(boolean force) {
-        if(!isInBatch || force) {
-            now = System.currentTimeMillis();
+    private void checkForRemoval() {
+        if(freeNodes.isEmpty()) {
+            return;
+        }
+        
+        var itr = freeNodes.iterator();
+        boolean ok = System.currentTimeMillis() - freeNodes.getFirst().getTimestamp() >= aliveTimeMS;
+        
+        if(ok) {
+            
+            while(itr.hasNext() && ok) {
+                itr.next();
+                ok = System.currentTimeMillis() - freeNodes.getFirst().getTimestamp() >= aliveTimeMS
+                    && freeNodes.size() + usedNodes.size() > coreSize;
+                if(ok) {
+                    itr.remove();
+                }
+            }
         }
     }
 
     /**
-     * Checks free nodes and clears out old ones if needed.
+     * Helper method.
+     *
+     * @param d Decorator.
+     * @return Decorated node.
      */
-    private void checkForRemoval() {
-        if(isInBatch) {
-            return;
+    private TimestampedDecorated createNode(D d) {
+        TimestampedDecorated tdec;
+
+        if(freeNodes.isEmpty()) {
+            // now(false);
+            // tdec = new TimestampedDecorated(factory.apply(d), now);
+            tdec = new TimestampedDecorated(factory.apply(d));
         }
-        
-        now(true);
-        synchronized(freeNodes) {
-            freeNodes.removeIf(
-                e -> freeNodes.size() + usedNodes.size() > coreSize && now - e.getTimestamp() > aliveTimeMS
-            );
+        else {
+            tdec = freeNodes.pollLast();
+            tdec.getDecorated().setDecorator(d);
         }
+
+        return tdec;
     }
     
     
@@ -231,16 +232,7 @@ public class TimedNodePool<D> implements DecoratedNodePool<D> {
             return Optional.empty();
         }
         
-        TimestampedDecorated tdec;
-
-        if(freeNodes.isEmpty()) {
-            now(false);
-            tdec = new TimestampedDecorated(factory.apply(d), now);
-        }
-        else {
-            tdec = freeNodes.pollLast();
-            tdec.getDecorated().setDecorator(d);
-        }
+        var tdec = createNode(d);
 
         usedNodes.put(d, tdec);
         checkForRemoval();
@@ -257,19 +249,22 @@ public class TimedNodePool<D> implements DecoratedNodePool<D> {
      */
     @Override
     public Collection<DecoratedNode<D>> getAll(Collection<D> ds) {
-        isInBatch = true;
         List<DecoratedNode<D>> l = new ArrayList<>();
         
-        now(true);
         for(D d : ds) {
-            get(d).ifPresent(l::add);
+            if(usedNodes.containsKey(d)) {
+                continue;
+            }
+            
+            var tdec = createNode(d);
+            usedNodes.put(d, tdec);
+            l.add(tdec.getDecorated());
         }
         
-        isInBatch = false;
         checkForRemoval();
         return l;
     }
-
+    
     /**
      * {@inheritDoc}
      * <p>
@@ -282,9 +277,12 @@ public class TimedNodePool<D> implements DecoratedNodePool<D> {
         checkForRemoval();
         
         TimestampedDecorated t;
-        if((t = usedNodes.remove(decoratedNode.getDecorator().get())) != null) {
+        if(decoratedNode.getDecorator().isEmpty()) {
+            usedNodes.entrySet().removeIf(e -> e.getValue().getDecorated() == decoratedNode);
+        }
+        else if((t = usedNodes.remove(decoratedNode.getDecorator().get())) != null) {
             t.getDecorated().clearDecoration();
-            now(false);
+            long now = System.currentTimeMillis();
             t.setTimestamp(now);
             freeNodes.addLast(t);
         }
@@ -300,13 +298,20 @@ public class TimedNodePool<D> implements DecoratedNodePool<D> {
     @Override
     public void releaseAll(Collection<DecoratedNode<D>> decoratedNodes) {
         checkForRemoval();
+
+        TimestampedDecorated t;
         
-        isInBatch = true;
-        now(true);
-        for(var dec : decoratedNodes) {
-            release(dec);
+        for(var d : decoratedNodes) {
+            if(d.getDecorator().isEmpty()) {
+                usedNodes.entrySet().removeIf(e -> e.getValue().getDecorated() == d);
+            }
+            else if((t = usedNodes.remove(d.getDecorator().get())) != null) {
+                t.getDecorated().clearDecoration();
+                long now = System.currentTimeMillis();
+                t.setTimestamp(now);
+                freeNodes.addLast(t);
+            }
         }
-        isInBatch = false;
     }
 
     /**

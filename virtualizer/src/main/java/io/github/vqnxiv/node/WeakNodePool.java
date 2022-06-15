@@ -1,37 +1,37 @@
 package io.github.vqnxiv.node;
 
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.function.Function;
 
 
 /**
- * The most basic kind of pool. It keeps all generated nodes
- * until {@link #clear()} is called.
- * 
+ * Node pool which only holds weak references to its cached nodes.
+ *
  * @param <D> Type of decorator.
  *
  * @see DecoratedNode
- * @see TimedNodePool
  */
-public class SetNodePool<D> implements DecoratedNodePool<D> {
-
+// todo: not finished
+public class WeakNodePool<D> implements DecoratedNodePool<D> {
+   
     /**
      * Nodes which aren't in use and can be decorated.
      */
-    private final Queue<DecoratedNode<D>> freeNodes;
+    private final Deque<WeakReference<DecoratedNode<D>>> freeNodes;
 
     /**
      * DecoratedNode nodes which have been retrieved from a 
-     * {@link #get(Object)} or {@link #getAll(Collection)} 
+     * {@link #get(Object)} or {@link #getAll(Collection)}
      * call.
      */
     private final Map<D, DecoratedNode<D>> usedNodes;
@@ -47,15 +47,15 @@ public class SetNodePool<D> implements DecoratedNodePool<D> {
      * 
      * @param factory Factory.
      */
-    public SetNodePool(Function<D, DecoratedNode<D>> factory) {
+    public WeakNodePool(Function<D, DecoratedNode<D>> factory) {
         Objects.requireNonNull(factory);
-        
+
         this.factory = factory;
         freeNodes = new ArrayDeque<>();
-        usedNodes = new HashMap<>(); 
+        usedNodes = new HashMap<>();
     }
 
-
+    
     /**
      * Helper method.
      *
@@ -69,17 +69,20 @@ public class SetNodePool<D> implements DecoratedNodePool<D> {
             ret = factory.apply(d);
         }
         else {
-            ret = freeNodes.poll();
+            ret = freeNodes.poll().get();
+            if(ret == null) {
+                ret = factory.apply(d);
+            }
             ret.setDecorator(d);
         }
 
         return ret;
     }
     
-
+    
     /**
      * {@inheritDoc}
-     * 
+     *
      * @param d Decorator.
      * @return An instance of DecoratedNode.
      */
@@ -88,23 +91,23 @@ public class SetNodePool<D> implements DecoratedNodePool<D> {
         if(usedNodes.containsKey(d)) {
             return Optional.empty();
         }
-        
+
         var ret = createNode(d);
         usedNodes.put(d, ret);
-        
+
         return Optional.of(ret);
     }
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @param ds Decorators.
      * @return Multiple instances of DecoratedNode.
      */
     @Override
     public Collection<DecoratedNode<D>> getAll(Collection<D> ds) {
         List<DecoratedNode<D>> l = new ArrayList<>();
-        
+
         for(D d : ds) {
             if(usedNodes.containsKey(d)) {
                 continue;
@@ -114,13 +117,13 @@ public class SetNodePool<D> implements DecoratedNodePool<D> {
             usedNodes.put(d, r);
             l.add(r);
         }
-        
+
         return l;
     }
-
+    
     /**
      * {@inheritDoc}
-     * 
+     *
      * @param decoratedNode The decoratedNode to return.
      */
     @Override
@@ -130,7 +133,7 @@ public class SetNodePool<D> implements DecoratedNodePool<D> {
         }
         else if(usedNodes.remove(decoratedNode.getDecorator().get(), decoratedNode)) {
             decoratedNode.clearDecoration();
-            freeNodes.add(decoratedNode);
+            freeNodes.add(new WeakReference<>(decoratedNode));
         }
     }
 
